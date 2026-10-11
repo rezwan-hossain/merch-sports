@@ -24,6 +24,7 @@ import { audit } from "@/lib/audit";
 import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { SOURCE_COOKIE, decodeSourceCookie } from "@/lib/traffic-source";
+import { VIRTUAL_TSHIRT, validateRegistration } from "@/lib/registration-validation";
 import {
   claimSlots,
   newHoldExpiry,
@@ -269,6 +270,32 @@ export async function placeOrder(formData: {
     return { error: "Invalid ticket quantity" };
   }
 
+  // ─── VALIDATE THE FORM (never trust the browser) ───────
+  // Runs before a guest account is created, so bad input never reaches the
+  // database. Everything below uses the cleaned values.
+  const checked = validateRegistration(formData);
+  if (!checked.ok) {
+    log.warn({ field: checked.field }, "order:invalid_input");
+    await log.flush();
+    return { error: checked.error };
+  }
+  const reg = checked.data;
+  formData = {
+    ...formData,
+    fullName: reg.fullName,
+    email: reg.email,
+    phone: reg.phone,
+    gender: reg.gender,
+    ageCategory: reg.ageCategory,
+    bloodGroup: reg.bloodGroup,
+    tshirtSize: reg.tshirtSize,
+    emergencyContactName: reg.emergencyContactName ?? undefined,
+    emergencyContactNumber: reg.emergencyContactNumber ?? undefined,
+    communityName: reg.communityName ?? undefined,
+    runnerCategory: reg.runnerCategory,
+    paymentMethod: reg.paymentMethod,
+  };
+
   // ─── RESOLVE USER (logged-in OR guest) ─────────────────
   const supabase = await createClient();
   const {
@@ -374,6 +401,7 @@ export async function placeOrder(formData: {
 
     const pkg = await prisma.package.findUnique({
       where: { id: formData.packageId },
+      include: { event: { select: { eventType: true } } },
     });
     const pkgDuration = Date.now() - pkgStart;
 
@@ -408,6 +436,12 @@ export async function placeOrder(formData: {
         "order:package_not_available",
       );
       return { error: "This package is not available" };
+    }
+
+    // "No T-shirt" is only for virtual events.
+    if (reg.tshirtSize === VIRTUAL_TSHIRT && pkg.event.eventType !== "VIRTUAL") {
+      logWithUser.warn("order:invalid_input — VIRTUAL t-shirt on a live event");
+      return { error: "Select a T-shirt size." };
     }
 
     // ─── FREE EXPIRED HOLDS ────────────────────────────────
@@ -592,7 +626,7 @@ export async function placeOrder(formData: {
           fullName: formData.fullName,
           phone: formData.phone.trim(),
           gender: formData.gender,
-          birthDate: new Date(formData.birthDate),
+          birthDate: reg.birthDate,
           ageCategory: formData.ageCategory,
           bloodGroup: formData.bloodGroup,
           tshirtSize: formData.tshirtSize,

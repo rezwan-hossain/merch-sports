@@ -22,6 +22,9 @@ export const BLOOD_GROUPS = [
 
 export const RUNNER_CATEGORIES = ["Amateur"] as const;
 
+/** Payment methods the checkout offers (OrderSummary). */
+export const PAYMENT_METHODS = ["shurjopay"] as const;
+
 /** Every status an order can hold — used by filters and updateOrderStatus. */
 export const ORDER_STATUSES = ["PENDING", "CONFIRMED", "CANCELLED"] as const;
 

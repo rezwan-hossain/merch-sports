@@ -3,6 +3,23 @@
 
 @import "tailwindcss";
 
+/* Desktop is shown at 90%, exactly like the browser's own 90% zoom: text,
+   images and fixed-pixel sizes all shrink together. Phones/tablets keep 100%. */
+@media (min-width: 1024px) {
+  html {
+    --page-zoom: 0.9;
+    zoom: var(--page-zoom);
+  }
+  /* Under zoom, 100vh is drawn 10% short (a white band under full-screen
+     sections). Divide by the zoom so "full screen" is the real screen again. */
+  .min-h-screen {
+    min-height: calc(100vh / var(--page-zoom));
+  }
+  .h-screen {
+    height: calc(100vh / var(--page-zoom));
+  }
+}
+
 /* Design Tokens */
 :root {
   --background: 0 0% 97%;

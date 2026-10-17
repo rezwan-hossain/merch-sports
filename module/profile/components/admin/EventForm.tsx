@@ -2,6 +2,11 @@
 "use client";
 
 import { useState } from "react";
+import {
+  REGISTRATION_STATUSES,
+  REGISTRATION_STATUS_OPTIONS,
+  isRegistrationStatus,
+} from "@/lib/registration-status";
 import type {
   AdminEvent,
   AdminOrganizer,
@@ -86,6 +91,7 @@ export function EventForm({
     minPackagePrice: event?.minPackagePrice?.toString() || "",
     organizerId: event?.organizerId?.toString() || "",
     status: event?.status || "ACTIVE",
+    registrationStatus: event?.registrationStatus || "OPEN",
   });
 
   // Packages
@@ -528,6 +534,31 @@ export function EventForm({
                 <SelectItem value="COMPLETED">Completed</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              Registration
+            </label>
+            <Select
+              value={form.registrationStatus}
+              onValueChange={(val) => updateField("registrationStatus", val)}
+            >
+              <SelectTrigger className="h-11 rounded-lg border border-gray-200 bg-gray-50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-gray-200">
+                {REGISTRATION_STATUSES.map((v) => (
+                  <SelectItem key={v} value={v}>
+                    {REGISTRATION_STATUS_OPTIONS[v].label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="mt-1.5 text-[11px] text-gray-500">
+              {isRegistrationStatus(form.registrationStatus)
+                ? REGISTRATION_STATUS_OPTIONS[form.registrationStatus].help
+                : ""}
+            </p>
           </div>
         </div>
 

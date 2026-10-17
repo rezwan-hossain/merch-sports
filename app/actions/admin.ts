@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { audit, diff } from "@/lib/audit";
+import { isRegistrationStatus } from "@/lib/registration-status";
 
 const EVENT_AUDIT_FIELDS = [
   "name",
@@ -20,6 +21,7 @@ const EVENT_AUDIT_FIELDS = [
   "minPackagePrice",
   "organizerId",
   "status",
+  "registrationStatus",
 ] as const;
 
 // ─── Auth helper ────────────────────────────────────
@@ -103,9 +105,14 @@ export async function createEvent(formData: {
   minPackagePrice: string;
   organizerId: string;
   status: string;
+  registrationStatus?: string;
 }) {
   const { error } = await requireAdmin();
   if (error) return { success: false, error };
+  const registrationStatus = formData.registrationStatus ?? "OPEN";
+  if (!isRegistrationStatus(registrationStatus)) {
+    return { success: false, error: "Invalid registration status" };
+  }
 
   try {
     // Check slug uniqueness
@@ -137,6 +144,7 @@ export async function createEvent(formData: {
           : null,
         organizerId: parseInt(formData.organizerId),
         status: formData.status as any,
+        registrationStatus,
       },
     });
 
@@ -172,10 +180,16 @@ export async function updateEvent(
     minPackagePrice: string;
     organizerId: string;
     status: string;
+    registrationStatus?: string;
   },
 ) {
   const { error } = await requireAdmin();
   if (error) return { success: false, error };
+  // Not sent = keep the current value (never silently reopen registration).
+  const registrationStatus = formData.registrationStatus;
+  if (registrationStatus !== undefined && !isRegistrationStatus(registrationStatus)) {
+    return { success: false, error: "Invalid registration status" };
+  }
 
   try {
     // 1. Fetch current event before updating to know if the slug changed
@@ -210,6 +224,7 @@ export async function updateEvent(
           : null,
         organizerId: parseInt(formData.organizerId),
         status: formData.status as any,
+        ...(registrationStatus ? { registrationStatus } : {}),
       },
     });
 

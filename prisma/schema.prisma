@@ -69,6 +69,9 @@ model Event {
   // subheading, message, checklist}); null = use the default. See lib/email-template.ts.
   confirmationEmail Json?
   status          Status         @default(ACTIVE)
+  // Whether people can register right now (admin-set). OPEN still shows
+  // "Sold out" automatically when every package is full.
+  registrationStatus RegistrationStatus @default(OPEN)
   isActive        Boolean        @default(true)
   isArchived      Boolean        @default(false)
   createdAt       DateTime       @default(now())
@@ -299,6 +302,13 @@ enum Status {
   INACTIVE
   CANCELLED
   COMPLETED
+}
+
+enum RegistrationStatus {
+  OPEN
+  COMING_SOON
+  SOLD_OUT
+  CLOSED
 }
 
 enum OrderStatus {

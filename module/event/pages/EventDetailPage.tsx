@@ -189,6 +189,7 @@ const EventDetailPage = ({ event, searchParams }: EventDetailPageProps) => {
                 packages={event.packages}
                 eventSlug={event.slug}
                 eventId={event.id}
+                registrationStatus={event.registrationStatus}
               />
             </Suspense>
 

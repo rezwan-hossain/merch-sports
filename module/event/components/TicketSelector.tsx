@@ -5,17 +5,21 @@ import { ArrowRight, ChevronDown, Ticket } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { EventPackage } from "@/types/event";
+import { REGISTRATION_BLOCKED_MESSAGE } from "@/lib/registration-status";
 
 type TicketSelectorProps = {
   packages: EventPackage[];
   eventSlug: string;
   eventId: string;
+  /** Admin-set (lib/registration-status). Anything but OPEN blocks buying. */
+  registrationStatus?: string;
 };
 
 const TicketSelector = ({
   packages,
   eventSlug,
   eventId,
+  registrationStatus = "OPEN",
 }: TicketSelectorProps) => {
   const router = useRouter();
 
@@ -54,6 +58,35 @@ const TicketSelector = ({
       setIsLoading(false);
     }
   };
+
+  // Registration not open (coming soon / sold out / closed): say why,
+  // instead of a button that would only fail at checkout.
+  if (registrationStatus !== "OPEN" && registrationStatus in REGISTRATION_BLOCKED_MESSAGE) {
+    const blocked = registrationStatus as keyof typeof REGISTRATION_BLOCKED_MESSAGE;
+    return (
+      <div className="border border-gray-200 rounded-lg p-4 sm:p-6">
+        <div className="flex items-center gap-2 mb-4 border-b border-border pb-3 sm:pb-4">
+          <Ticket size={20} className="text-event-gold" />
+          <h3 className="font-display text-2xl sm:text-3xl tracking-wide">
+            TICKET
+          </h3>
+        </div>
+        <div className="rounded-lg bg-gray-100 px-4 py-5 text-center">
+          <p className="text-[10px] sm:text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-1">
+            {blocked === "COMING_SOON" ? "Coming soon" : blocked === "SOLD_OUT" ? "Sold out" : "Registration closed"}
+          </p>
+          <p className="text-sm text-gray-900">{REGISTRATION_BLOCKED_MESSAGE[blocked]}</p>
+        </div>
+        <button
+          type="button"
+          disabled
+          className="mt-4 w-full rounded-full py-3 sm:py-4 font-body font-semibold text-sm tracking-wide bg-gray-300 text-gray-500 cursor-not-allowed"
+        >
+          {blocked === "COMING_SOON" ? "OPENS SOON" : blocked === "SOLD_OUT" ? "SOLD OUT" : "CLOSED"}
+        </button>
+      </div>
+    );
+  }
 
   // No packages available
   if (packages.length === 0) {

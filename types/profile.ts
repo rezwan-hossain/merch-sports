@@ -45,6 +45,7 @@ export type AdminEvent = {
   thumbImage: string | null;
   minPackagePrice: number | null;
   status: string;
+  registrationStatus?: string;
   isActive: boolean;
   organizerId: number;
   organizer: {
@@ -90,6 +91,7 @@ export type EventFormData = {
   minPackagePrice: string;
   organizerId: string;
   status: string;
+  registrationStatus: string;
 };
 
 export type PackageFormData = {

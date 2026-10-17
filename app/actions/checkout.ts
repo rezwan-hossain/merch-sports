@@ -25,6 +25,7 @@ import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { SOURCE_COOKIE, decodeSourceCookie } from "@/lib/traffic-source";
 import { VIRTUAL_TSHIRT, validateRegistration } from "@/lib/registration-validation";
+import { REGISTRATION_BLOCKED_MESSAGE } from "@/lib/registration-status";
 import {
   claimSlots,
   newHoldExpiry,
@@ -401,7 +402,7 @@ export async function placeOrder(formData: {
 
     const pkg = await prisma.package.findUnique({
       where: { id: formData.packageId },
-      include: { event: { select: { eventType: true } } },
+      include: { event: { select: { eventType: true, registrationStatus: true } } },
     });
     const pkgDuration = Date.now() - pkgStart;
 
@@ -436,6 +437,16 @@ export async function placeOrder(formData: {
         "order:package_not_available",
       );
       return { error: "This package is not available" };
+    }
+
+    // The admin's Registration setting: coming soon / sold out / closed
+    // means no NEW orders. (People already holding a slot can still pay.)
+    if (pkg.event.registrationStatus !== "OPEN") {
+      logWithUser.warn(
+        { registrationStatus: pkg.event.registrationStatus },
+        "order:registration_not_open",
+      );
+      return { error: REGISTRATION_BLOCKED_MESSAGE[pkg.event.registrationStatus] };
     }
 
     // "No T-shirt" is only for virtual events.

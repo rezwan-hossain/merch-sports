@@ -36,6 +36,8 @@ export type EventData = {
   thumbImage: string | null;
   minPackagePrice: number | null;
   status: "ACTIVE" | "INACTIVE" | "CANCELLED" | "COMPLETED";
+  /** Admin-set; see lib/registration-status.ts. */
+  registrationStatus?: "OPEN" | "COMING_SOON" | "SOLD_OUT" | "CLOSED";
   organizer: Organizer;
   packages: EventPackage[];
 };

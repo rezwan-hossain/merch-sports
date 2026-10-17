@@ -8,33 +8,51 @@ type EventsPageProps = {
   error?: string;
 };
 
-const GRID =
-  "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 mt-4 md:mt-6 lg:mt-8";
+const GRID = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5";
 
-/** Big two-line section title ("UPCOMING / EVENTS") with a count on the right. */
+/**
+ * Big two-line title ("UPCOMING / EVENTS") with a short intro and the count on
+ * the right. The first section's title is the page's h1.
+ */
 function SectionHeader({
   first,
   count,
   id,
+  as: Heading = "h2",
+  intro,
 }: {
   first: string;
   count: number;
   id: string;
+  as?: "h1" | "h2";
+  intro?: string;
 }) {
   return (
-    <div className="mb-10 md:mb-16 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-      <h2
-        id={id}
-        className="text-6xl sm:text-7xl md:text-8xl uppercase leading-[0.88] tracking-tight text-[#0d2b22]"
-      >
-        {first}
-        <br />
-        <span className="text-neon-lime">Events</span>
-      </h2>
-      {count > 0 && (
-        <p className="pb-2 text-xs font-semibold uppercase tracking-widest text-gray-500">
-          {count} {count === 1 ? "event" : "events"}
-        </p>
+    <div className="mt-10 mb-8 md:mb-12 flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
+      <div>
+        <Heading
+          id={id}
+          className="text-6xl sm:text-7xl md:text-8xl uppercase leading-[0.90] tracking-tight text-[#0d2b22]"
+        >
+          {first}
+          <br />
+          <span className="text-neon-lime">Events</span>
+        </Heading>
+      </div>
+
+      {(intro || count > 0) && (
+        <div className="max-w-sm pb-1 md:text-right">
+          {intro && (
+            <p className="text-sm md:text-base leading-relaxed text-gray-600">
+              {intro}
+            </p>
+          )}
+          {count > 0 && (
+            <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.2em] text-gray-400">
+              {count} {count === 1 ? "event" : "events"}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );
@@ -42,20 +60,18 @@ function SectionHeader({
 
 const EventsPage = ({ upcomingEvents, previousEvents }: EventsPageProps) => {
   return (
-    <div className="min-h-screen bg-background px-4 md:px-8 py-4 md:py-8">
+    <div className="min-h-screen bg-background px-4 md:px-8 pt-32 md:pt-40 pb-20 md:pb-28">
+      {/* Upcoming: the page's main heading */}
       <div className="mt-42">
         <HeroText title="Events" />
       </div>
 
-      {/* Upcoming */}
-      <section
-        aria-labelledby="upcoming-events"
-        className="max-w-7xl mx-auto mt-12"
-      >
+      <section aria-labelledby="upcoming-events" className="max-w-7xl mx-auto">
         <SectionHeader
           id="upcoming-events"
           first="Upcoming"
           count={upcomingEvents.length}
+          intro=" Grab your spot before it fills up."
         />
 
         {upcomingEvents.length > 0 ? (
@@ -85,12 +101,13 @@ const EventsPage = ({ upcomingEvents, previousEvents }: EventsPageProps) => {
       {previousEvents.length > 0 && (
         <section
           aria-labelledby="previous-events"
-          className="max-w-7xl mx-auto mt-20 md:mt-28"
+          className="max-w-7xl mx-auto mt-20 md:mt-28 border-t border-gray-200 pt-16 md:pt-20"
         >
           <SectionHeader
             id="previous-events"
             first="Previous"
             count={previousEvents.length}
+            intro="Races we've run together. Thank you to every runner, volunteer and supporter."
           />
           <div className={GRID}>
             {previousEvents.map((event) => (

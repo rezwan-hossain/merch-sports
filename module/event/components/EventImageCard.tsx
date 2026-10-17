@@ -6,12 +6,20 @@ import type { EventData } from "@/types/event";
 import { formatEventTimeUTC } from "@/utils/date";
 
 // Day and month in Dhaka time, so "16 DEC" matches the event page.
-const dayFmt = new Intl.DateTimeFormat("en-GB", { day: "2-digit", timeZone: "Asia/Dhaka" });
-const monthFmt = new Intl.DateTimeFormat("en-GB", { month: "short", timeZone: "Asia/Dhaka" });
+const dayFmt = new Intl.DateTimeFormat("en-GB", {
+  day: "2-digit",
+  timeZone: "Asia/Dhaka",
+});
+const monthFmt = new Intl.DateTimeFormat("en-GB", {
+  month: "short",
+  timeZone: "Asia/Dhaka",
+});
 
 /** Cheapest package that is still on sale; falls back to the stored minimum. */
 function fromPrice(event: EventData): number | null {
-  const prices = (event.packages ?? []).filter((p) => p.isActive !== false).map((p) => p.price);
+  const prices = (event.packages ?? [])
+    .filter((p) => p.isActive !== false)
+    .map((p) => p.price);
   if (prices.length > 0) return Math.min(...prices);
   return event.minPackagePrice ?? null;
 }
@@ -29,7 +37,13 @@ function cta(status: EventData["status"]): string {
   }
 }
 
-export default function EventImageCard({ event, priority = false }: { event: EventData; priority?: boolean }) {
+export default function EventImageCard({
+  event,
+  priority = false,
+}: {
+  event: EventData;
+  priority?: boolean;
+}) {
   const date = new Date(event.date);
   const price = fromPrice(event);
   const isPast = event.status === "COMPLETED" || event.status === "CANCELLED";
@@ -74,7 +88,9 @@ export default function EventImageCard({ event, priority = false }: { event: Eve
         </span>
         {/* -mr cancels the gap letter-spacing leaves after the last letter,
             so the month's right edge lines up with the number's. */}
-        <span className="mt-1 block mr-[-0.1em] text-xs font-bold uppercase tracking-widest">{monthFmt.format(date)}</span>
+        <span className="mt-1 block mr-[-0.1em] text-xs font-bold uppercase tracking-widest">
+          {monthFmt.format(date)}
+        </span>
       </div>
 
       {/* Details */}
@@ -90,10 +106,21 @@ export default function EventImageCard({ event, priority = false }: { event: Eve
           {formatEventTimeUTC(event.time)} · {event.address}
         </p>
 
-        <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/20 pt-4">
-          <span className="font-[family-name:var(--font-heading)] text-3xl tracking-wide">
-            {price === null ? "TBA" : price === 0 ? "Free" : `৳${price.toLocaleString("en-IN")}`}
-          </span>
+        <div className="mt-4 flex items-end justify-between gap-3 border-t border-white/20 pt-4">
+          <div className="leading-none">
+            {price !== null && price > 0 && (
+              <span className="mb-1 block text-[8px] font-semibold uppercase tracking-widest text-white/70">
+                Starting from
+              </span>
+            )}
+            <span className="font-[family-name:var(--font-heading)] text-3xl tracking-wide">
+              {price === null
+                ? "TBA"
+                : price === 0
+                  ? "Free"
+                  : `৳${price.toLocaleString("en-IN")}`}
+            </span>
+          </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-gray-900 transition-colors group-hover:bg-neon-lime group-hover:text-white">
             {cta(event.status)}
             {!isPast && <ArrowRight size={14} aria-hidden />}

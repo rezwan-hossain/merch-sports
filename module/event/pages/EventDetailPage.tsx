@@ -1,17 +1,15 @@
 // module/event/pages/EventDetailPage.tsx
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import Link from "next/link";
 
-import { HeroText } from "@/components/ui/HeroText";
 import type { EventData } from "@/types/event";
 import EventInfoCard from "../components/EventInfoCard";
 import ShareButtons from "../components/ShareButtons";
 import { formatEventTime, formatEventTimeUTC } from "@/utils/date";
 import { ViewContentTracker } from "@/components/tracking/ViewContentTracker";
 import RichDescription from "../components/RichDescription";
-import { EventBanner } from "../components/EventBanner";
+import EventHero from "../components/EventHero";
 
 // Dynamic imports for non-critical components
 const TicketSelector = dynamic(() => import("../components/TicketSelector"), {
@@ -86,55 +84,17 @@ const EventDetailPage = ({ event, searchParams }: EventDetailPageProps) => {
         />
       )}
 
-      <div className="mt-42">
-        <HeroText
-          title={event.name}
-          date={formattedDate}
-          time={formattedTime}
-          location={event.address}
-        />
-      </div>
+      <EventHero event={event} />
 
       <div
         className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 ${
           isCompleted ? "grayscale opacity-60" : ""
         }`}
       >
-        <div className="hidden md:block relative rounded-xl overflow-hidden mt-4 mb-8">
-          <Image
-            src={event.bannerImage}
-            alt={event.name}
-            width={1200}
-            height={540}
-            className="w-full h-[300px] sm:h-[360px] lg:h-[540px] object-contain lg:object-cover rounded-xl"
-            priority // Critical for LCP
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
-            placeholder="blur"
-            quality={75}
-            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAUH/8QAIhAAAgEDAwUBAAAAAAAAAAAAAQIDBAURAAYhEiIxQVFh/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAYEQEBAQEBAAAAAAAAAAAAAAABAgADEf/aAAwDAQACEQMRAD8Aw+3bdu9ru1BXQ26eSGnqIpZFRVZmVXBIAHknGmG/rjPuC4Uu4J6SajgqIPTjp8qV7Y0H3A5Azk8f2mms0Bui5NdXe//Z"
-          />
-          <StatusRibbon status={event.status} />
-        </div>
-        {/* <EventBanner event={event} /> */}
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 lg:gap-12">
           {/* Left column */}
           <div>
-            {/* Mobile Hero Image */}
-            <div className="block md:hidden relative rounded-xl overflow-hidden">
-              <Image
-                src={event.thumbImage ?? event.bannerImage}
-                alt={event.name}
-                width={600}
-                height={280}
-                className="w-full h-[280px] sm:h-[360px] object-cover"
-                priority // Also LCP on mobile
-                sizes="100vw"
-                placeholder="blur"
-                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAUH/8QAIhAAAgEDAwUBAAAAAAAAAAAAAQIDBAURAAYhEiIxQVFh/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAYEQEBAQEBAAAAAAAAAAAAAAABAgADEf/aAAwDAQACEQMRAD8Aw+3bdu9ru1BXQ26eSGnqIpZFRVZmVXBIAHknGmG/rjPuC4Uu4J6SajgqIPTjp8qV7Y0H3A5Azk8f2mms0Bui5NdXe//Z"
-              />
-              <StatusRibbon status={event.status} />
-            </div>
 
             <section className="mt-6 lg:mt-10">
               <div className="flex items-center justify-end mb-4">
@@ -220,14 +180,6 @@ const EventTypeBadge = ({ eventType }: { eventType: string }) => (
   >
     {eventType === "LIVE" ? "UPCOMING" : eventType}
   </span>
-);
-
-const StatusRibbon = ({ status }: { status: string }) => (
-  <div className="absolute top-0 left-0 h-16 w-16 overflow-visible">
-    <div className="absolute -rotate-45 bg-neon-lime text-white font-body font-semibold text-xs text-center py-1 w-[170px] left-[-34px] top-[32px]">
-      {status === "ACTIVE" ? "Upcoming" : status}
-    </div>
-  </div>
 );
 
 // Skeleton components

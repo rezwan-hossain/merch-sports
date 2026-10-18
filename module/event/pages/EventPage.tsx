@@ -1,5 +1,6 @@
 import { HeroText } from "@/components/ui/HeroText";
 import EventImageCard from "../components/EventImageCard";
+import EventsSectionHeader from "../components/EventsSectionHeader";
 import { EventData } from "@/types/event";
 
 type EventsPageProps = {
@@ -10,54 +11,6 @@ type EventsPageProps = {
 
 const GRID = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5";
 
-/**
- * Big two-line title ("UPCOMING / EVENTS") with a short intro and the count on
- * the right. The first section's title is the page's h1.
- */
-function SectionHeader({
-  first,
-  count,
-  id,
-  as: Heading = "h2",
-  intro,
-}: {
-  first: string;
-  count: number;
-  id: string;
-  as?: "h1" | "h2";
-  intro?: string;
-}) {
-  return (
-    <div className="mt-10 mb-8 md:mb-12 flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
-      <div>
-        <Heading
-          id={id}
-          className="text-6xl sm:text-7xl md:text-8xl uppercase leading-[0.90] tracking-tight text-[#0d2b22]"
-        >
-          {first}
-          <br />
-          <span className="text-neon-lime">Events</span>
-        </Heading>
-      </div>
-
-      {(intro || count > 0) && (
-        <div className="max-w-sm pb-1 md:text-right">
-          {intro && (
-            <p className="text-sm md:text-base leading-relaxed text-gray-600">
-              {intro}
-            </p>
-          )}
-          {count > 0 && (
-            <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.2em] text-gray-400">
-              {count} {count === 1 ? "event" : "events"}
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 const EventsPage = ({ upcomingEvents, previousEvents }: EventsPageProps) => {
   return (
     <div className="min-h-screen bg-background px-4 md:px-8 pt-32 md:pt-40 pb-20 md:pb-28">
@@ -67,7 +20,7 @@ const EventsPage = ({ upcomingEvents, previousEvents }: EventsPageProps) => {
       </div>
 
       <section aria-labelledby="upcoming-events" className="max-w-7xl mx-auto">
-        <SectionHeader
+        <EventsSectionHeader
           id="upcoming-events"
           first="Upcoming"
           count={upcomingEvents.length}
@@ -103,7 +56,7 @@ const EventsPage = ({ upcomingEvents, previousEvents }: EventsPageProps) => {
           aria-labelledby="previous-events"
           className="max-w-7xl mx-auto mt-20 md:mt-28 border-t border-gray-200 pt-16 md:pt-20"
         >
-          <SectionHeader
+          <EventsSectionHeader
             id="previous-events"
             first="Previous"
             count={previousEvents.length}

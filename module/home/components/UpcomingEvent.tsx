@@ -1,74 +1,36 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { getUpcomingEvents } from "@/app/actions/event";
-import EventCard from "@/module/event/components/EventCard";
-import { formatEventTimeUTC } from "@/utils/date";
-import { stat } from "fs";
-import { ChevronDown } from "lucide-react";
+import EventImageCard from "@/module/event/components/EventImageCard";
+import EventsSectionHeader from "@/module/event/components/EventsSectionHeader";
+
+// Homepage "Upcoming events": same heading and cards as the events page.
+const SHOWN = 6; // up to two rows on desktop
 
 export default async function UpcomingEvents() {
-  const { events } = await getUpcomingEvents(2);
+  const { events } = await getUpcomingEvents(SHOWN);
 
   if (events.length === 0) return null;
 
   return (
-    <section id="testimonials" className=" px-[5%] py-24">
+    <section aria-labelledby="home-upcoming-events" className="px-4 md:px-8 py-20 md:py-24">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <div className="text-sm uppercase tracking-widest text-gray-500">
-            Upcomming
-          </div>
+        <EventsSectionHeader id="home-upcoming-events" first="Upcoming" count={events.length} />
 
-          <h2 className="text-4xl md:text-6xl font-bold uppercase leading-tighter text-gray-900 ">
-            Marathon <br />
-            <span className="text-neon-lime">Event</span>
-          </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
+          {events.map((event) => (
+            <EventImageCard key={event.id} event={event} />
+          ))}
         </div>
 
-        {/* Grid */}
-        <div className="max-w-7xl mx-auto space-y-10 mt-12">
-          {events.map((event, index) => {
-            const formattedEvent = {
-              slug: event.slug,
-              title: event.name,
-              description: event.description,
-              shortDesc: event.shortDesc,
-              // time: new Date(event.time).toLocaleTimeString("en-US", {
-              //   hour: "2-digit",
-              //   minute: "2-digit",
-              // }),
-              time: formatEventTimeUTC(event.time),
-              date: new Date(event.date)
-                .toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "2-digit",
-                  year: "numeric",
-                })
-                .toUpperCase(),
-              location: event.address.toUpperCase(),
-              pricing:
-                event.packages.length > 0 ? (
-                  <>
-                    {event.packages.map((pkg, i) => (
-                      <span key={i}>
-                        {pkg.name}{" "}
-                        <span className="font-semibold text-neon-lime">
-                          ৳{pkg.price}
-                        </span>
-                        {i !== event.packages.length - 1 && " / "}
-                      </span>
-                    ))}
-                  </>
-                ) : (
-                  "No packages available"
-                ),
-              image: event.bannerImage,
-              eventType: event.eventType,
-              highlighted: index === 0,
-              status: event.status,
-            };
-
-            return <EventCard key={event.id} event={formattedEvent} />;
-          })}
+        <div className="mt-8 flex justify-end">
+          <Link
+            href="/events"
+            className="group inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.15em] text-[#0d2b22] hover:text-neon-lime transition-colors"
+          >
+            View all events
+            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" aria-hidden />
+          </Link>
         </div>
       </div>
     </section>

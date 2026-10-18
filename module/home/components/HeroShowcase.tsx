@@ -223,10 +223,12 @@ export default function HeroShowcase({
   ][cells.length];
 
   return (
-    <section className="px-3 sm:px-5 pt-24 md:pt-28 pb-6">
+    <section className="pb-6 md:px-5 md:pt-28">
+      {/* Phones: the photo fills the first screen edge to edge (under the
+          transparent header); the info bar sits below it. md+: rounded card. */}
       <div className="mx-auto max-w-[1600px]">
         {/* ─── Photo card ─── */}
-        <div className="relative isolate overflow-hidden rounded-[28px] bg-[#0d2b22] h-[680px] sm:h-[660px] lg:h-[min(86vh,840px)] lg:min-h-[620px]">
+        <div className="relative isolate overflow-hidden bg-[#0d2b22] h-svh min-h-[560px] md:h-[660px] md:min-h-0 md:rounded-[28px] lg:h-[min(86vh,840px)] lg:min-h-[620px]">
           <picture>
             <source
               media="(min-width: 768px)"
@@ -250,7 +252,7 @@ export default function HeroShowcase({
           />
 
           {/* Text + buttons */}
-          <div className="absolute inset-x-0 bottom-0 px-5 pb-24 sm:px-10 sm:pb-28 md:inset-y-0 md:flex md:flex-col md:justify-center md:pb-20 lg:px-14">
+          <div className="absolute inset-x-0 bottom-0 px-5 pb-12 sm:px-10 md:inset-y-0 md:flex md:flex-col md:justify-center md:pb-20 lg:px-14">
             <p className="mb-4 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.25em] text-white">
               <span
                 className="h-2 w-2 rounded-full"
@@ -283,7 +285,7 @@ export default function HeroShowcase({
 
         {/* ─── Info bar, overlapping the card's bottom edge ─── */}
         {cells.length > 0 && (
-          <div className="relative z-10 mx-5 -mt-12 sm:mx-10 sm:-mt-10 lg:mx-20">
+          <div className="relative z-10 mx-4 mt-4 sm:mx-10 md:-mt-10 lg:mx-20">
             <dl
               // Phones/tablets: gap-px over grey = hairline dividers in any layout.
               // Large screens use borders: the site-wide 90% zoom rounds 1px gaps away.

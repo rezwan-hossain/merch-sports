@@ -10,6 +10,7 @@ import { formatEventTime, formatEventTimeUTC } from "@/utils/date";
 import { ViewContentTracker } from "@/components/tracking/ViewContentTracker";
 import RichDescription from "../components/RichDescription";
 import EventHero from "../components/EventHero";
+import StickyTicketBar from "../components/StickyTicketBar";
 
 // Dynamic imports for non-critical components
 const TicketSelector = dynamic(() => import("../components/TicketSelector"), {
@@ -58,6 +59,16 @@ const EventDetailPage = ({ event, searchParams }: EventDetailPageProps) => {
   const isUnstyled = view === "unstyled";
 
   const isCompleted = event.status === "COMPLETED";
+
+  // Sticky "Get ticket" bar: only when people can actually buy.
+  const openPrices = (event.packages ?? [])
+    .filter((p) => p.isActive !== false && p.availableSlots - p.usedSlots > 0)
+    .map((p) => p.price);
+  const fromPrice = openPrices.length > 0 ? Math.min(...openPrices) : null;
+  const canBuy =
+    event.status === "ACTIVE" &&
+    (event.registrationStatus ?? "OPEN") === "OPEN" &&
+    fromPrice !== null;
 
   // Pre-compute on server
   const formattedDate = formatEventDate(event.date);
@@ -126,7 +137,9 @@ const EventDetailPage = ({ event, searchParams }: EventDetailPageProps) => {
           </div>
 
           {/* Right column - Sticky sidebar */}
-          <aside className="lg:sticky lg:top-20 h-fit space-y-8 mt-10">
+          {/* Sticky on desktop, but never taller than the screen: it scrolls on its
+              own (scrollbar hidden), so the ticket card is always reachable. */}
+          <aside className="lg:sticky lg:top-20 h-fit space-y-8 mt-10 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:overscroll-contain lg:pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Suspense
               fallback={
                 <div className="h-24 bg-gray-100 animate-pulse rounded-xl" />
@@ -144,14 +157,17 @@ const EventDetailPage = ({ event, searchParams }: EventDetailPageProps) => {
               organizer={event.organizer}
             />
 
-            <Suspense fallback={<TicketSelectorSkeleton />}>
-              <TicketSelector
-                packages={event.packages}
-                eventSlug={event.slug}
-                eventId={event.id}
-                registrationStatus={event.registrationStatus}
-              />
-            </Suspense>
+            {/* The sticky "Get ticket" bar scrolls here */}
+            <div id="tickets" className="scroll-mt-28">
+              <Suspense fallback={<TicketSelectorSkeleton />}>
+                <TicketSelector
+                  packages={event.packages}
+                  eventSlug={event.slug}
+                  eventId={event.id}
+                  registrationStatus={event.registrationStatus}
+                />
+              </Suspense>
+            </div>
 
             {event.status !== "COMPLETED" && event.status !== "CANCELLED" && (
               <ShareButtons
@@ -165,6 +181,14 @@ const EventDetailPage = ({ event, searchParams }: EventDetailPageProps) => {
           </aside>
         </div>
       </div>
+
+      {canBuy && (
+        <>
+          <StickyTicketBar eventName={event.name} fromPrice={fromPrice!} targetId="tickets" />
+          {/* Room for the bar, so it never covers the end of the page */}
+          <div className="h-16 md:hidden" aria-hidden />
+        </>
+      )}
     </div>
   );
 };

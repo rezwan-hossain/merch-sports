@@ -19,7 +19,7 @@ const dateFmt = new Intl.DateTimeFormat("en-GB", {
  * "42 · 21.1 · 10 · 5 km" from package distances like "21K", "21.1KM", "7.5 km".
  * Falls back to the raw names if a distance isn't a plain number of km.
  */
-function distancesLabel(event: EventData): string | null {
+export function distancesLabel(event: EventData): string | null {
   const raw = [
     ...new Set(
       (event.packages ?? []).map((p) => p.distance.trim()).filter(Boolean),

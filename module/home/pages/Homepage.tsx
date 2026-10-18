@@ -1,5 +1,8 @@
 import { getActiveHero } from "@/app/actions/homepage";
-import HeroSection from "../components/HeroSection";
+import { getEventBySlug } from "@/app/actions/event";
+// Previous hero (full-screen image + countdown), kept for reference:
+// import HeroSection from "../components/HeroSection";
+import HeroShowcase, { eventSlugFromLink } from "../components/HeroShowcase";
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import StatsCounter from "../components/StatsCounter";
@@ -25,12 +28,16 @@ const RegisterCTA = dynamic(() => import("../components/RegisterCTA"));
 
 export default async function Homepage() {
   const { hero } = await getActiveHero();
+  // The event the hero links to: venue, start time, classes, registration status.
+  const heroEventSlug = eventSlugFromLink(hero?.slug);
+  const heroEvent = heroEventSlug ? (await getEventBySlug(heroEventSlug)).event : null;
 
   return (
     <main role="main" aria-label="Homepage">
       {/* ✅ Only hero loads immediately */}
       <section aria-label="Hero">
-        <HeroSection hero={hero} />
+        {/* <HeroSection hero={hero} /> */}
+        <HeroShowcase hero={hero} event={heroEvent ?? null} />
       </section>
 
       {/* ✅ Everything else loads after hero is visible */}

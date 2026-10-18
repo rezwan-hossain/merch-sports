@@ -137,9 +137,9 @@ const EventDetailPage = ({ event, searchParams }: EventDetailPageProps) => {
           </div>
 
           {/* Right column - Sticky sidebar */}
-          {/* Sticky on desktop, but never taller than the screen: it scrolls on its
-              own (scrollbar hidden), so the ticket card is always reachable. */}
-          <aside className="lg:sticky lg:top-20 h-fit space-y-8 mt-10 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:overscroll-contain lg:pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {/* Scrolls with the page (not sticky): it's taller than most screens,
+              and a sticky one would hide the ticket card below the fold. */}
+          <aside className="h-fit space-y-8 mt-10">
             <Suspense
               fallback={
                 <div className="h-24 bg-gray-100 animate-pulse rounded-xl" />

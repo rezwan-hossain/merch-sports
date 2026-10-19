@@ -1,178 +1,126 @@
-// components/StatsCounter.tsx
+// module/home/components/StatsCounter.tsx
+//
+// "Event at a glance": four stat cards with numbers that count up when the
+// section scrolls into view. Same style as the rest of the homepage: big
+// left-aligned heading with a lime line, rounded cards, one dark-green card.
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { Users, Route, HeartHandshake, Trophy } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { HeartHandshake, Route, Trophy, Users } from "lucide-react";
 
-interface Stat {
+type Stat = {
   value: number;
   label: string;
   suffix?: string;
   prefix?: string;
-  icon: React.ReactNode;
-  accent?: boolean;
-}
+  icon: React.ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
+  featured?: boolean;
+};
 
 const stats: Stat[] = [
-  {
-    value: 3500,
-    label: "TOTAL PARTICIPANTS",
-    suffix: "+",
-    icon: <Users size={24} />,
-  },
-  {
-    value: 21.1,
-    label: "KILOMETERS",
-    suffix: " KM",
-    icon: <Route size={24} />,
-  },
-  {
-    value: 200,
-    label: "VOLUNTEERS",
-    suffix: "+",
-    icon: <HeartHandshake size={24} />,
-    accent: true,
-  },
-  {
-    value: 100000,
-    label: "PRIZE POOL ",
-    prefix: "৳",
-    suffix: "+",
-    icon: <Trophy size={24} />,
-  },
+  { value: 3500, label: "Total participants", suffix: "+", icon: Users },
+  { value: 21.1, label: "Kilometers", suffix: " km", icon: Route },
+  { value: 200, label: "Volunteers", suffix: "+", icon: HeartHandshake, featured: true },
+  { value: 100000, label: "Prize pool", prefix: "৳", suffix: "+", icon: Trophy },
 ];
 
-function Counter({
-  end,
-  duration = 2000,
-  suffix = "",
-  prefix = "",
-}: {
-  end: number;
-  duration?: number;
-  suffix?: string;
-  prefix?: string;
-}) {
-  const [count, setCount] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const isDecimal = end % 1 !== 0;
+const format = (n: number, decimals: number) =>
+  n.toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+
+/** Counts up from 0 once it scrolls into view (instant for reduced motion). */
+function Counter({ end, prefix = "", suffix = "", duration = 1800 }: { end: number; prefix?: string; suffix?: string; duration?: number }) {
+  const decimals = end % 1 === 0 ? 0 : 1;
+  const [value, setValue] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
+    const el = ref.current;
+    if (!el) return;
+    let frame = 0;
+    const io = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
+        if (!entry.isIntersecting) return;
+        io.disconnect();
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          setValue(end);
+          return;
         }
+        const start = performance.now();
+        const tick = (now: number) => {
+          const t = Math.min((now - start) / duration, 1);
+          setValue(end * (1 - Math.pow(1 - t, 4))); // ease-out
+          if (t < 1) frame = requestAnimationFrame(tick);
+        };
+        frame = requestAnimationFrame(tick);
       },
       { threshold: 0.3 },
     );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!isVisible) return;
-
-    let startTime: number;
-    let animationFrame: number;
-
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = timestamp - startTime;
-      const percentage = Math.min(progress / duration, 1);
-      const eased = 1 - Math.pow(1 - percentage, 4);
-
-      setCount(
-        isDecimal
-          ? parseFloat((end * eased).toFixed(1))
-          : Math.floor(end * eased),
-      );
-
-      if (percentage < 1) {
-        animationFrame = requestAnimationFrame(animate);
-      }
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      cancelAnimationFrame(frame);
     };
-
-    animationFrame = requestAnimationFrame(animate);
-
-    return () => cancelAnimationFrame(animationFrame);
-  }, [isVisible, end, duration, isDecimal]);
+  }, [end, duration]);
 
   return (
-    <h3 ref={ref} className="tracking-wide">
-      {prefix}
-      {count.toLocaleString()}
-      {suffix}
-    </h3>
+    // The final value is announced; the animation is visual only.
+    <span ref={ref} aria-label={`${prefix}${format(end, decimals)}${suffix}`}>
+      <span aria-hidden className="tabular-nums">
+        {prefix}
+        {format(decimals ? Math.round(value * 10) / 10 : Math.floor(value), decimals)}
+        {suffix}
+      </span>
+    </span>
   );
 }
 
 export default function StatsCounter() {
   return (
-    <section id="stats" className="py-24 px-4">
+    <section id="stats" aria-labelledby="stats-title" className="px-4 md:px-8 py-20 md:py-24">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-
-        <div className="text-center mb-16">
-          <div className="text-sm uppercase tracking-widest text-gray-500">
-            EVENT
-          </div>
-
-          <h2 className="text-4xl md:text-6xl font-bold uppercase leading-tighter text-gray-900 ">
-            AT A <br />
-            <span className="text-neon-lime">GLANCE</span>
+        {/* Header (same style as "Upcoming events") */}
+        <div className="mb-10 md:mb-14 flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
+          <h2 id="stats-title" className="text-6xl sm:text-7xl md:text-8xl uppercase leading-[0.9] tracking-tight text-[#0d2b22]">
+            At a
+            <br />
+            <span className="text-neon-lime">glance</span>
           </h2>
+          <p className="max-w-sm pb-1 text-sm md:text-base leading-relaxed text-gray-600 md:text-right">
+            The numbers behind the race: runners, distance, the crew that makes it happen, and what&apos;s up for grabs.
+          </p>
         </div>
 
-        {/* Grid */}
-        <div className="grid md:grid-cols-4 gap-6">
-          {stats.map((stat, i) => (
+        {/* Cards: 2 per row on phones/tablets, 4 on desktop */}
+        <dl className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">
+          {stats.map(({ icon: Icon, label, value, prefix, suffix, featured }) => (
             <div
-              key={i}
-              className={`border border-gray-200 bg-white p-8 rounded-3xl transition transform hover:scale-[1.03] ${
-                stat.accent ? "bg-[#CCFF00]" : ""
+              key={label}
+              className={`flex min-w-0 flex-col justify-between rounded-2xl p-5 sm:p-7 min-h-[170px] sm:min-h-[210px] transition-transform duration-300 hover:-translate-y-1 ${
+                featured ? "bg-[#0d2b22] text-white" : "bg-white text-[#0d2b22] ring-1 ring-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
               }`}
             >
-              {/* Icon */}
-              <div
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition ${
-                  stat.accent
-                    ? "bg-black text-[#CCFF00]"
-                    : "bg-gray-100 text-black"
+              <span
+                className={`flex h-11 w-11 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${
+                  featured ? "bg-neon-lime text-[#0d2b22]" : "bg-neon-lime/15 text-[#0d2b22]"
                 }`}
               >
-                {stat.icon}
+                <Icon size={22} aria-hidden />
+              </span>
+              <div className="mt-6 min-w-0">
+                <dd className="font-[family-name:var(--font-heading)] text-[2rem] leading-none tracking-wide sm:text-5xl">
+                  <Counter end={value} prefix={prefix} suffix={suffix} />
+                </dd>
+                <dt
+                  className={`mt-2 text-[10px] font-semibold uppercase tracking-[0.14em] sm:text-xs sm:tracking-[0.16em] ${
+                    featured ? "text-neon-lime" : "text-gray-500"
+                  }`}
+                >
+                  {label}
+                </dt>
               </div>
-
-              {/* Counter */}
-              <div
-                className={`text-4xl md:text-5xl font-bold mb-2 ${
-                  stat.accent ? "text-black" : "text-gray-900"
-                }`}
-              >
-                <Counter
-                  end={stat.value}
-                  suffix={stat.suffix}
-                  prefix={stat.prefix}
-                />
-              </div>
-
-              {/* Label */}
-              <p
-                className={`text-sm uppercase tracking-wider font-medium ${
-                  stat.accent ? "text-black/70" : "text-gray-500"
-                }`}
-              >
-                {stat.label}
-              </p>
             </div>
           ))}
-        </div>
+        </dl>
       </div>
     </section>
   );

@@ -16,8 +16,13 @@ const UpcomingEvents = dynamic(() => import("../components/UpcomingEvent"), {
   loading: () => <div className="h-96 bg-gray-100 animate-pulse" />,
 });
 
-const EventSchedule = dynamic(() => import("../components/EventSchedule"), {
-  loading: () => <div className="h-96 bg-gray-100 animate-pulse" />,
+// Event schedule section: hidden for now (replaced by the video section).
+// const EventSchedule = dynamic(() => import("../components/EventSchedule"), {
+//   loading: () => <div className="h-96 bg-gray-100 animate-pulse" />,
+// });
+
+const VideoSection = dynamic(() => import("../components/VideoSection"), {
+  loading: () => <div className="h-96" />,
 });
 
 const CTASection = dynamic(() => import("../components/CTASection"));
@@ -47,11 +52,13 @@ export default async function Homepage() {
         </section>
       </Suspense>
 
-      <Suspense fallback={<div className="h-96" />}>
+{/* <Suspense fallback={<div className="h-96" />}>
         <section aria-label="Event Schedule">
           <EventSchedule />
         </section>
-      </Suspense>
+      </Suspense> */}
+
+      <VideoSection />
 
       <Suspense fallback={<div className="h-96" />}>
         <section aria-label="Event Schedule">

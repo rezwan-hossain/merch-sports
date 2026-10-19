@@ -32,7 +32,7 @@ const CTASection = () => {
           )}
         </svg>
 
-        <div className="grid items-center gap-10 lg:grid-cols-[1.2fr_1fr] lg:gap-16">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-16 [&>*]:min-w-0">
           {/* Text + button */}
           <div>
             <p className="mb-4 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.25em] text-white/70">
@@ -69,29 +69,29 @@ const CTASection = () => {
           </div>
 
           {/* Stats: three tiles, the first highlighted */}
-          <dl className="grid grid-cols-3 gap-3 sm:gap-4">
+          <dl className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-4">
             {STATS.map(({ icon: Icon, value, label }, i) => {
               const featured = i === 0;
               return (
                 <div
                   key={label}
-                  className={`flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6 min-h-[132px] sm:min-h-[160px] ${
+                  className={`flex min-w-0 items-center gap-4 rounded-2xl px-4 py-3.5 sm:flex-col sm:items-start sm:justify-between sm:gap-0 sm:p-5 sm:min-h-[160px] lg:p-6 ${
                     featured ? "bg-neon-lime text-[#0d2b22]" : "bg-white/[0.06] ring-1 ring-white/10"
                   }`}
                 >
                   <span
-                    className={`flex h-9 w-9 items-center justify-center rounded-xl sm:h-10 sm:w-10 ${
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
                       featured ? "bg-[#0d2b22]/10" : "bg-neon-lime/15 text-neon-lime"
                     }`}
                   >
                     <Icon size={18} aria-hidden />
                   </span>
-                  <div className="mt-4">
-                    <dd className="font-[family-name:var(--font-heading)] text-2xl leading-none tracking-wide sm:text-3xl lg:text-4xl">
+                  <div className="flex min-w-0 flex-1 items-baseline justify-between gap-3 sm:mt-4 sm:block">
+                    <dd className="order-1 font-[family-name:var(--font-heading)] text-2xl leading-none tracking-wide sm:text-3xl lg:text-4xl">
                       {value}
                     </dd>
                     <dt
-                      className={`mt-1.5 text-[10px] font-semibold uppercase tracking-[0.06em] sm:text-[11px] sm:tracking-[0.16em] ${
+                      className={`order-2 truncate text-[11px] font-semibold uppercase tracking-[0.16em] sm:mt-1.5 sm:tracking-[0.12em] lg:tracking-[0.16em] ${
                         featured ? "text-[#0d2b22]/70" : "text-white/55"
                       }`}
                     >

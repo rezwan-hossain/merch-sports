@@ -287,7 +287,7 @@ export default function HeroShowcase({
 
         {/* ─── Info bar, overlapping the card's bottom edge ─── */}
         {cells.length > 0 && (
-          <div className="relative z-10 mx-4 mt-4 sm:mx-10 md:-mt-10 lg:mx-20">
+          <div className="relative z-10 mx-4 -mt-6 sm:mx-10 md:-mt-10 lg:mx-20">
             <dl
               // Phones/tablets: gap-px over grey = hairline dividers in any layout.
               // Large screens use borders: the site-wide 90% zoom rounds 1px gaps away.

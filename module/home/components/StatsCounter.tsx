@@ -107,7 +107,7 @@ export default function StatsCounter() {
                 <Icon size={22} aria-hidden />
               </span>
               <div className="mt-6 min-w-0">
-                <dd className="font-[family-name:var(--font-heading)] text-[2rem] leading-none tracking-wide sm:text-5xl">
+                <dd className="whitespace-nowrap font-[family-name:var(--font-heading)] text-[clamp(1.35rem,6.4vw,2rem)] leading-none tracking-wide sm:text-4xl xl:text-5xl">
                   <Counter end={value} prefix={prefix} suffix={suffix} />
                 </dd>
                 <dt

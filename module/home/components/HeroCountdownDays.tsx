@@ -34,7 +34,20 @@ export default function HeroCountdownDays({ target, accent }: { target: string; 
     );
   }
 
-  const days = Math.ceil(minutes / 1440);
+  // Whole days left (like the full countdown: 66 days 20 hours → "66 DAYS").
+  const days = Math.floor(minutes / 1440);
+  if (days === 0) {
+    // Last day: count hours instead of showing "0 DAYS".
+    const hours = Math.max(1, Math.floor(minutes / 60));
+    return (
+      <span
+        className="block font-[family-name:var(--font-heading)] text-2xl sm:text-3xl leading-none tracking-wide"
+        style={{ color: accent }}
+      >
+        {hours} {hours === 1 ? "HOUR" : "HOURS"}
+      </span>
+    );
+  }
   return (
     <span
       className="block font-[family-name:var(--font-heading)] text-2xl sm:text-3xl leading-none tracking-wide"

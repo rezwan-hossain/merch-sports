@@ -54,9 +54,9 @@ export default function DesktopUserMenu({
     <div className="relative" ref={userMenuRef}>
       <button
         onClick={() => setUserMenuOpen(!userMenuOpen)}
-        className="flex items-center gap-3 bg-gray-900 text-white font-bold uppercase tracking-wider text-xs rounded-lg px-4 py-3 hover:bg-gray-800 transition-colors"
+        className="flex items-center gap-2.5 rounded-full bg-[#0d2b22] py-1.5 pl-1.5 pr-4 text-[13px] font-semibold uppercase tracking-[0.1em] text-white transition hover:opacity-90"
       >
-        <div className="w-8 h-8 rounded-md bg-white/20 flex items-center justify-center overflow-hidden flex-shrink-0">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neon-lime text-[#0d2b22]">
           {user.image ? (
             <Image
               src={user.image}

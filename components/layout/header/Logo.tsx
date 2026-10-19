@@ -5,10 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 
 interface LogoProps {
-  scrolled: boolean;
+  /** Kept for callers; the logo no longer resizes on scroll (it made the header jump). */
+  scrolled?: boolean;
 }
 
-export default function Logo({ scrolled }: LogoProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- prop kept so callers need no change
+export default function Logo(_props: LogoProps) {
   return (
     <Link
       href="/"
@@ -20,11 +22,7 @@ export default function Logo({ scrolled }: LogoProps) {
         alt="MerchSports Logo"
         width={82}
         height={82}
-        className={`rounded-full object-cover transition-all duration-300 ${
-          scrolled
-            ? "w-[62px] h-[62px]"
-            : "w-[62px] h-[62px] md:w-[82px] md:h-[82px]"
-        }`}
+        className="rounded-full object-cover w-[62px] h-[62px] md:w-[82px] md:h-[82px]"
         priority
         quality={90}
         sizes="(max-width: 768px) 62px, 82px"

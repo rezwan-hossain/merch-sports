@@ -1,104 +1,120 @@
-import { Bolt, Gauge, Star, Trophy } from "lucide-react";
+// module/home/components/Category.tsx
+//
+// "Choose your distance": one card per race distance, in the homepage style
+// (big left-aligned heading with a lime line, rounded cards, one dark-green
+// featured card). The distance is the card's hero: a big condensed "15K".
+import { ArrowUpRight, Bolt, Gauge, Star, Trophy } from "lucide-react";
 import Link from "next/link";
 
 type Category = {
-  title: string;
+  distance: string; // "15K"
+  name: string; // "Endurance run"
   description: string;
-  icon: React.ReactNode;
-  link: string;
-  bgColor?: string;
-  btnBg?: string;
-  btnHoverBg?: string;
-  btnTextColor?: string;
-  btnHoverTextColor?: string;
+  icon: React.ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
+  featured?: boolean;
 };
 
 const categories: Category[] = [
+  { distance: "1K", name: "Kids run", description: "A lively dash for beginners and families.", icon: Bolt },
+  { distance: "7.5K", name: "Fun run", description: "Test your pace on our certified flat course.", icon: Gauge },
   {
-    title: "1K KIDS RUN",
-    description: "A lively dash for beginners and families.",
-    icon: <Bolt size={24} />,
-    link: "/login",
-    bgColor: "bg-gray-100",
-    btnBg: "bg-gray-100",
-    btnHoverBg: "hover:bg-black",
-    btnTextColor: "text-black",
-    btnHoverTextColor: "hover:text-white",
-  },
-  {
-    title: "7.5K FUN RUN",
-    description: "Test your pace on our certified flat course.",
-    icon: <Gauge size={24} />,
-    link: "/login",
-    bgColor: "bg-gray-100",
-    btnBg: "bg-gray-100",
-    btnHoverBg: "hover:bg-black",
-    btnTextColor: "text-black",
-    btnHoverTextColor: "hover:text-white",
-  },
-  {
-    title: "15K EDDURANCE RUN",
+    distance: "15K",
+    name: "Endurance run",
     description: "The definitive test of strength and endurance.",
-    icon: <Star size={24} />,
-    link: "/login",
-    bgColor: "bg-[#CCFF00]",
-    btnBg: "bg-black",
-    btnHoverBg: "hover:bg-[#CCFF00]",
-    btnTextColor: "text-white",
-    btnHoverTextColor: "hover:text-black",
+    icon: Star,
+    featured: true,
   },
-  {
-    title: "21K HALF MARATHON",
-    description: "The ultimate achievement for elite athletes.",
-    icon: <Trophy size={24} />,
-    link: "/login",
-    bgColor: "bg-gray-100",
-    btnBg: "bg-gray-100",
-    btnHoverBg: "hover:bg-black",
-    btnTextColor: "text-black",
-    btnHoverTextColor: "hover:text-white",
-  },
+  { distance: "21K", name: "Half marathon", description: "The ultimate achievement for elite athletes.", icon: Trophy },
 ];
+
+// Where "Join" takes people: the events list, where they pick a race.
+const JOIN_HREF = "/events";
 
 export default function Categories() {
   return (
-    <section id="categories" className="py-24 px-4 ">
+    <section id="categories" aria-labelledby="categories-title" className="px-4 md:px-8 py-20 md:py-24">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <div className="text-sm uppercase tracking-widest text-gray-500">
-            CHOOSE
-          </div>
-
-          <h2 className="text-4xl md:text-6xl font-bold uppercase leading-tighter text-gray-900 ">
-            YOUR <br />
-            <span className="text-neon-lime">DISTANCE</span>
+        {/* Header (same style as the other homepage sections) */}
+        <div className="mb-10 md:mb-14 flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
+          <h2
+            id="categories-title"
+            className="text-6xl sm:text-7xl md:text-8xl uppercase leading-[0.9] tracking-tight text-[#0d2b22]"
+          >
+            Your
+            <br />
+            <span className="text-neon-lime">distance</span>
           </h2>
+          <p className="max-w-sm pb-1 text-sm md:text-base leading-relaxed text-gray-600 md:text-right">
+            From a first family dash to a full half marathon, there&apos;s a start line for every runner.
+          </p>
         </div>
 
-        {/* Grid */}
-        <div className="grid md:grid-cols-4 gap-6">
-          {categories.map((cat, i) => (
-            <div
-              key={i}
-              className={`border border-gray-200 bg-white p-8 rounded-3xl category-card transition transform hover:scale-[1.03]`}
+        {/* Cards: 1 per row on small phones, 2 on larger phones/tablets, 4 on desktop */}
+        <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 lg:grid-cols-4 lg:gap-5">
+          {categories.map(({ distance, name, description, icon: Icon, featured }) => (
+            <article
+              key={distance}
+              className={`group flex min-w-0 flex-col rounded-2xl p-5 sm:p-7 transition-transform duration-300 hover:-translate-y-1 ${
+                featured
+                  ? "bg-[#0d2b22] text-white"
+                  : "bg-white text-[#0d2b22] ring-1 ring-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
+              }`}
             >
-              <div
-                className={`w-14 h-14 ${cat.bgColor} rounded-2xl flex items-center justify-center mb-6 category-icon transition`}
-              >
-                {cat.icon}
+              <div className="flex items-start justify-between gap-3">
+                <span
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${
+                    featured ? "bg-neon-lime text-[#0d2b22]" : "bg-neon-lime/15 text-[#0d2b22]"
+                  }`}
+                >
+                  <Icon size={22} aria-hidden />
+                </span>
+                {featured && (
+                  <span className="rounded-full bg-neon-lime/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-neon-lime">
+                    Popular
+                  </span>
+                )}
               </div>
 
-              <h3 className="text-2xl font-bold mb-2">{cat.title}</h3>
-              <p className="text-gray-500 text-sm mb-6">{cat.description}</p>
+              <h3 className="mt-6">
+                <span className="block font-[family-name:var(--font-heading)] text-5xl leading-none tracking-tight sm:text-6xl">
+                  {distance}
+                </span>
+                <span
+                  className={`mt-2 block text-[11px] font-semibold uppercase tracking-[0.16em] sm:text-xs ${
+                    featured ? "text-neon-lime" : "text-gray-500"
+                  }`}
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  {name}
+                </span>
+              </h3>
+              <p className={`mt-3 flex-1 text-sm leading-relaxed ${featured ? "text-white/75" : "text-gray-600"}`}>
+                {description}
+              </p>
 
               <Link
-                href={cat.link}
-                className={`block text-center py-3 rounded-full text-sm font-bold ${cat.btnBg} ${cat.btnTextColor} ${cat.btnHoverBg} ${cat.btnHoverTextColor} transition`}
+                href={JOIN_HREF}
+                className={`mt-6 inline-flex items-center justify-between gap-2 rounded-full py-1.5 pl-4 pr-1.5 text-[13px] font-semibold transition ${
+                  featured
+                    ? "bg-neon-lime text-[#0d2b22] hover:brightness-105"
+                    : "bg-gray-100 text-[#0d2b22] hover:bg-[#0d2b22] hover:text-white"
+                }`}
+                aria-label={`Join the ${distance} ${name.toLowerCase()}`}
               >
-                JOIN {cat.title.split(" ")[0]}
+                Join {distance}
+                <span
+                  className={`flex h-7 w-7 items-center justify-center rounded-full ${
+                    featured ? "bg-[#0d2b22] text-neon-lime" : "bg-white text-[#0d2b22]"
+                  }`}
+                >
+                  <ArrowUpRight
+                    size={14}
+                    className="transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                    aria-hidden
+                  />
+                </span>
               </Link>
-            </div>
+            </article>
           ))}
         </div>
       </div>

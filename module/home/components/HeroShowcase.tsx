@@ -266,17 +266,19 @@ export default function HeroShowcase({
             </h1>
 
             {showButton && (
-              <div className="mt-7">
+              <div className="mt-6">
                 <Link
                   href={eventPath}
-                  className="group inline-flex items-center gap-2 rounded-full bg-neon-lime px-3 py-2 text-xs font-semibold text-[#0d2b22] shadow-lg transition hover:brightness-105 active:scale-[0.98] sm:text-base"
+                  className="group inline-flex items-center gap-2 rounded-full bg-neon-lime py-1 pl-3.5 pr-1 text-xs font-semibold text-[#0d2b22] shadow-[0_6px_20px_rgba(0,0,0,0.25)] ring-1 ring-inset ring-white/30 transition hover:shadow-[0_8px_28px_rgba(153,205,67,0.45)] hover:brightness-105 active:scale-[0.98] sm:pl-4 sm:text-[13px]"
                 >
                   View details
-                  <ArrowUpRight
-                    size={16}
-                    className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                    aria-hidden
-                  />
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0d2b22] text-neon-lime sm:h-7 sm:w-7">
+                    <ArrowUpRight
+                      size={13}
+                      className="transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                      aria-hidden
+                    />
+                  </span>
                 </Link>
               </div>
             )}

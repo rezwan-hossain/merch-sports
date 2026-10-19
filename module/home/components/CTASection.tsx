@@ -1,202 +1,107 @@
-// components/sections/CTASection.tsx
-import { Facebook, ArrowRight, Users, Trophy, MapPin } from "lucide-react";
+// module/home/components/CTASection.tsx
+//
+// "Join our community" call-to-action, in the site's newer style: rounded
+// dark-green card, condensed heading with a lime line, pill button, and a row
+// of stat tiles (the first one highlighted in lime).
+import { ArrowUpRight, Facebook, Footprints, Trophy, Users } from "lucide-react";
 
-const stats = [
-  { icon: Users, value: "5,000+", label: "Expectators" },
-  { icon: MapPin, value: "2,000+", label: "Runners" },
+const FACEBOOK_URL = "https://www.facebook.com/profile.php?id=61566321857186";
+
+const STATS = [
+  { icon: Users, value: "5,000+", label: "Spectators" },
+  { icon: Footprints, value: "2,000+", label: "Runners" },
   { icon: Trophy, value: "5+", label: "Events" },
-];
+] as const;
 
 const CTASection = () => {
   return (
-    <section className="relative w-full overflow-hidden bg-gray-900 text-white">
-      {/* ─── Background Elements ─── */}
+    <section aria-labelledby="community-cta" className="px-3 sm:px-5 py-16 md:py-24">
+      <div className="relative isolate mx-auto max-w-[1600px] overflow-hidden rounded-[28px] bg-[#0d2b22] px-6 py-12 text-white sm:px-10 sm:py-14 lg:px-16 lg:py-20">
+        {/* Decor: a lime glow and a faint finish-line checker */}
+        <div aria-hidden className="pointer-events-none absolute -left-24 -top-28 -z-10 h-80 w-80 rounded-full bg-neon-lime/15 blur-3xl" />
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute -right-6 top-1/2 -z-10 h-64 w-32 -translate-y-1/2 text-white opacity-[0.05] md:h-80 md:w-40"
+          viewBox="0 0 100 200"
+          fill="currentColor"
+        >
+          {Array.from({ length: 10 }).flatMap((_, row) =>
+            Array.from({ length: 5 }).map((_, col) =>
+              (row + col) % 2 === 0 ? <rect key={`${row}-${col}`} x={col * 20} y={row * 20} width="20" height="20" /> : null,
+            ),
+          )}
+        </svg>
 
-      {/* Running track curves */}
-      <svg
-        className="absolute -top-24 -left-24 w-80 h-80 opacity-[0.04] md:w-[500px] md:h-[500px]"
-        viewBox="0 0 400 400"
-        fill="none"
-      >
-        <circle
-          cx="200"
-          cy="200"
-          r="180"
-          stroke="currentColor"
-          strokeWidth="6"
-          strokeDasharray="30 20"
-        />
-        <circle
-          cx="200"
-          cy="200"
-          r="140"
-          stroke="currentColor"
-          strokeWidth="4"
-          strokeDasharray="20 15"
-        />
-        <circle
-          cx="200"
-          cy="200"
-          r="100"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeDasharray="15 10"
-        />
-      </svg>
-
-      {/* Finish line pattern */}
-      <svg
-        className="absolute -right-8 top-1/2 -translate-y-1/2 w-28 h-56 opacity-[0.04] md:w-40 md:h-72"
-        viewBox="0 0 100 200"
-        fill="currentColor"
-      >
-        {[...Array(10)].map((_, row) =>
-          [...Array(5)].map((_, col) =>
-            (row + col) % 2 === 0 ? (
-              <rect
-                key={`${row}-${col}`}
-                x={col * 20}
-                y={row * 20}
-                width="20"
-                height="20"
-              />
-            ) : null,
-          ),
-        )}
-      </svg>
-
-      {/* Motion lines */}
-      <svg
-        className="absolute bottom-6 left-6 w-36 h-20 opacity-[0.06] md:w-52 md:h-28"
-        viewBox="0 0 200 100"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-      >
-        <path d="M10 80 Q60 20 120 50 T190 30" />
-        <path d="M10 90 Q70 40 130 60 T190 45" />
-        <path d="M10 70 Q50 10 110 40 T190 15" />
-      </svg>
-
-      {/* Road shape */}
-      <svg
-        className="absolute -top-6 right-1/4 w-44 h-44 opacity-[0.04] md:w-60 md:h-60"
-        viewBox="0 0 200 200"
-        fill="none"
-        stroke="currentColor"
-      >
-        <path
-          d="M20 180 Q60 100 100 120 T180 20"
-          strokeWidth="20"
-          strokeLinecap="round"
-        />
-        <path
-          d="M20 180 Q60 100 100 120 T180 20"
-          strokeWidth="2"
-          strokeDasharray="8 8"
-          className="opacity-50"
-        />
-      </svg>
-
-      {/* Neon-lime accent glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-neon-lime/5 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Scattered dots */}
-      <div className="absolute top-12 left-1/3 w-2 h-2 rounded-full bg-neon-lime/20" />
-      <div className="absolute top-20 left-[38%] w-1.5 h-1.5 rounded-full bg-white/10" />
-      <div className="absolute bottom-16 right-1/3 w-2.5 h-2.5 rounded-full bg-neon-lime/15" />
-      <div className="absolute top-1/3 right-[15%] w-1.5 h-1.5 rounded-full bg-white/10" />
-
-      {/* ─── Content ─── */}
-      <div className="relative z-10 mx-auto max-w-5xl px-5 sm:px-6 py-16 md:py-24 lg:py-28">
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
-          {/* Left: Text */}
-          <div className="flex-1 text-center lg:text-left">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6">
-              <div className="w-2 h-2 rounded-full bg-neon-lime animate-pulse" />
-              <span className="text-xs font-bold uppercase tracking-widest text-white/80">
-                Growing Community
+        <div className="grid items-center gap-10 lg:grid-cols-[1.2fr_1fr] lg:gap-16">
+          {/* Text + button */}
+          <div>
+            <p className="mb-4 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.25em] text-white/70">
+              <span className="relative flex h-2 w-2" aria-hidden>
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neon-lime opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-neon-lime" />
               </span>
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-wide uppercase leading-tight">
-              Join Our
+              Growing community
+            </p>
+            <h2 id="community-cta" className="text-5xl sm:text-6xl lg:text-7xl uppercase leading-[0.9] tracking-tight text-white">
+              Join our
               <br />
-              <span className="text-neon-lime">Community</span>
+              <span className="text-neon-lime">community</span>
             </h2>
-
-            <p className="mt-4 sm:mt-5 text-base sm:text-lg text-white/70 max-w-lg mx-auto lg:mx-0 leading-relaxed">
-              Connect with fellow runners, share experiences, and stay updated
-              with the latest marathon events across Bangladesh.
+            <p className="mt-5 max-w-lg text-base sm:text-lg leading-relaxed text-white/75">
+              Connect with fellow runners, share experiences, and stay updated with the latest marathon events across
+              Bangladesh.
             </p>
 
-            {/* CTA Buttons */}
-            <div className="mt-8 flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start">
-              <a
-                href="https://www.facebook.com/profile.php?id=61566321857186"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-neon-lime text-gray-900 font-bold uppercase tracking-wider text-sm rounded-lg px-7 py-4 hover:opacity-90 hover:-translate-y-0.5 transition-all"
-              >
-                <Facebook className="w-5 h-5" />
-                <span>Join on Facebook</span>
-                <div className="w-7 h-7 rounded-md bg-gray-900/15 flex items-center justify-center">
-                  <ArrowRight size={14} />
-                </div>
-              </a>
-
-              {/* <a
-                href="/events"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-white/20 text-white font-bold uppercase tracking-wider text-sm rounded-lg px-7 py-4 hover:bg-white/10 transition-all"
-              >
-                Browse Events
-              </a> */}
-            </div>
+            <a
+              href={FACEBOOK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group mt-8 inline-flex w-full items-center justify-center gap-2.5 rounded-full bg-neon-lime px-7 py-3.5 text-sm font-semibold text-[#0d2b22] shadow-lg transition hover:brightness-105 active:scale-[0.98] sm:w-auto sm:text-base"
+            >
+              <Facebook size={18} aria-hidden />
+              Join on Facebook
+              <ArrowUpRight
+                size={16}
+                className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                aria-hidden
+              />
+            </a>
           </div>
 
-          {/* Right: Stats Cards */}
-          <div className="flex-shrink-0 w-full lg:w-auto">
-            <div className="grid grid-cols-3 lg:grid-cols-1 gap-3 sm:gap-4">
-              {stats.map((stat, i) => (
+          {/* Stats: three tiles, the first highlighted */}
+          <dl className="grid grid-cols-3 gap-3 sm:gap-4">
+            {STATS.map(({ icon: Icon, value, label }, i) => {
+              const featured = i === 0;
+              return (
                 <div
-                  key={stat.label}
-                  className={`relative group rounded-xl p-4 sm:p-5 lg:p-6 text-center lg:text-left transition-all hover:-translate-y-0.5 ${
-                    i === 0
-                      ? "bg-neon-lime text-gray-900"
-                      : "bg-white/[0.07] backdrop-blur-sm border border-white/10 hover:border-white/20"
+                  key={label}
+                  className={`flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6 min-h-[132px] sm:min-h-[160px] ${
+                    featured ? "bg-neon-lime text-[#0d2b22]" : "bg-white/[0.06] ring-1 ring-white/10"
                   }`}
                 >
-                  <div
-                    className={`w-10 h-10 sm:w-11 sm:h-11 rounded-lg flex items-center justify-center mx-auto lg:mx-0 mb-2 sm:mb-3 ${
-                      i === 0 ? "bg-gray-900/15" : "bg-white/10"
+                  <span
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl sm:h-10 sm:w-10 ${
+                      featured ? "bg-[#0d2b22]/10" : "bg-neon-lime/15 text-neon-lime"
                     }`}
                   >
-                    <stat.icon
-                      className={`w-5 h-5 ${
-                        i === 0 ? "text-gray-900" : "text-neon-lime"
+                    <Icon size={18} aria-hidden />
+                  </span>
+                  <div className="mt-4">
+                    <dd className="font-[family-name:var(--font-heading)] text-2xl leading-none tracking-wide sm:text-3xl lg:text-4xl">
+                      {value}
+                    </dd>
+                    <dt
+                      className={`mt-1.5 text-[10px] font-semibold uppercase tracking-[0.06em] sm:text-[11px] sm:tracking-[0.16em] ${
+                        featured ? "text-[#0d2b22]/70" : "text-white/55"
                       }`}
-                    />
+                    >
+                      {label}
+                    </dt>
                   </div>
-                  <p
-                    className={`text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight ${
-                      i === 0 ? "text-gray-900" : "text-white"
-                    }`}
-                  >
-                    {stat.value}
-                  </p>
-                  <p
-                    className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${
-                      i === 0 ? "text-gray-900/60" : "text-white/50"
-                    }`}
-                  >
-                    {stat.label}
-                  </p>
                 </div>
-              ))}
-            </div>
-          </div>
+              );
+            })}
+          </dl>
         </div>
       </div>
     </section>

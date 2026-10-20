@@ -1,12 +1,4 @@
-I’ll prepare a professional `README.md` for your [`merch-sports` GitHub repository](<https://github.com/rezwan-hossain/merch-sports?utm_source=chatgpt.com>), with a project overview, features, setup instructions, technology stack, and contribution guidelines. I’ll keep implementation-specific details clearly marked where they need to be verified against the source code, rather than inventing commands or functionality.
 
-Here’s a ready-to-use README based on the repository’s actual configuration and database schema. The project uses Next.js 16, React 19, TypeScript, Prisma, PostgreSQL, and Supabase, with event registration, packages, orders, payments, coupons, and administrative management represented in its data model.
-
-GitHub
-
-+1
-
-Writing
 
 # Merch Sports
 

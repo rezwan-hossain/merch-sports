@@ -5,6 +5,8 @@ import EventDetailPage from "@/module/event/pages/EventDetailPage";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import EventDetailSkeleton from "@/module/event/components/EventDetailSkeleton";
+import JsonLd from "@/components/seo/JsonLd";
+import { SITE, breadcrumbJsonLd, eventDescription, eventJsonLd } from "@/lib/seo";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -12,55 +14,40 @@ type Props = {
 };
 
 // ── Dynamic Metadata ─────────────────────────
+// The preview image comes from ./opengraph-image.tsx (Next adds it for us).
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const { event } = await getEventBySlug(slug);
 
   if (!event) {
-    return { title: "Event Not Found" };
+    return { title: "Event not found", robots: { index: false } };
   }
 
-  const eventImage = event.thumbImage || event.bannerImage;
-  const formattedDate = new Date(event.date).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
+  const date = new Date(event.date).toLocaleDateString("en-GB", {
     day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Dhaka",
   });
-  const url = `${process.env.NEXT_PUBLIC_SITE_URL}/events/${slug}`;
+  const description = `${eventDescription(event)} · ${date} · ${event.address}`.slice(0, 300);
+  const path = `/events/${slug}`;
 
   return {
     title: event.name,
-    description:
-      event.shortDesc || `${event.name} — ${formattedDate} at ${event.address}`,
-
+    description,
+    alternates: { canonical: path },
     openGraph: {
-      title: event.name,
-      description:
-        event.shortDesc || `Join us for ${event.name} on ${formattedDate}`,
-      type: "article",
-      url,
-      siteName: "merchsports.com",
+      type: "website",
+      siteName: SITE.name,
       locale: "en_US",
-      ...(eventImage && {
-        images: [
-          {
-            url: eventImage,
-            width: 1200,
-            height: 630,
-            alt: event.name,
-          },
-        ],
-      }),
+      url: path,
+      title: event.name,
+      description,
     },
-
     twitter: {
       card: "summary_large_image",
       title: event.name,
-      description: event.shortDesc || `${event.name} — ${formattedDate}`,
-    },
-
-    alternates: {
-      canonical: url,
+      description,
     },
   };
 }
@@ -91,5 +78,20 @@ async function EventPageContent({
     notFound();
   }
 
-  return <EventDetailPage event={event} searchParams={resolvedSearchParams} />;
+  return (
+    <>
+      {/* Structured data: Google event rich results + breadcrumb trail */}
+      <JsonLd
+        data={[
+          eventJsonLd(event),
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Events", path: "/events" },
+            { name: event.name, path: `/events/${event.slug}` },
+          ]),
+        ]}
+      />
+      <EventDetailPage event={event} searchParams={resolvedSearchParams} />
+    </>
+  );
 }

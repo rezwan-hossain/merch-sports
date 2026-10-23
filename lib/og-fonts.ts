@@ -29,3 +29,25 @@ export async function loadGoogleFont(
 
   return fetch(match[1]).then((res) => res.arrayBuffer());
 }
+
+/**
+ * Load a Google Font containing ONLY the given characters (Google's `text=`
+ * parameter): a tiny file, ideal for drawing one title in a non-Latin script
+ * such as Bangla. Returns null if the font can't be fetched.
+ */
+export async function loadGoogleFontForText(
+  font: string,
+  weight: number,
+  text: string,
+): Promise<ArrayBuffer | null> {
+  try {
+    const url =
+      `https://fonts.googleapis.com/css2?family=${font.replace(/ /g, "+")}:wght@${weight}` +
+      `&text=${encodeURIComponent(text)}`;
+    const css = await fetch(url).then((r) => r.text());
+    const src = css.match(/src: url\((.+?)\) format\('(opentype|truetype|woff2?)'\)/)?.[1];
+    return src ? await fetch(src).then((r) => r.arrayBuffer()) : null;
+  } catch {
+    return null;
+  }
+}

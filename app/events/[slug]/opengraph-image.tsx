@@ -1,303 +1,151 @@
 // app/events/[slug]/opengraph-image.tsx
+//
+// The link-preview image for one event (Facebook, WhatsApp, LinkedIn, X…):
+// the event photo with a dark-green fade, the name, date, place and the
+// starting price, in the site's style. Bangla names are drawn with Noto Sans
+// Bengali, loaded with just the characters needed.
 import { ImageResponse } from "next/og";
-import { loadGoogleFont } from "@/lib/og-fonts";
+import { loadGoogleFont, loadGoogleFontForText } from "@/lib/og-fonts";
 import { prisma } from "@/lib/prisma";
+import { SITE } from "@/lib/seo";
 
 export const runtime = "nodejs";
-
-export const alt = "Event";
+export const alt = "Merch Sports event";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default async function EventOGImage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+const GREEN = "#0d2b22";
+const LIME = "#99cd43";
+const FONT_STACK = "Anton, Inter, Noto Sans Bengali";
+
+const dateFmt = new Intl.DateTimeFormat("en-GB", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "Asia/Dhaka",
+});
+
+export default async function EventOGImage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  const [event, titleFont, bodyFont] = await Promise.all([
-    prisma.event.findUnique({
-      where: { slug },
-      select: {
-        name: true,
-        thumbImage: true,
-        bannerImage: true,
-        date: true,
-        address: true,
-        eventType: true,
-        shortDesc: true,
-        minPackagePrice: true,
-        organizer: {
-          select: { name: true },
-        },
-      },
-    }),
-    loadGoogleFont("Bebas Neue", 400),
-    loadGoogleFont("Inter", 400),
-  ]);
-
-  if (!event) {
-    return new ImageResponse(
-      <div
-        style={{
-          width: 1200,
-          height: 630,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#99cd43",
-          color: "#fff",
-          fontSize: 48,
-          fontFamily: "Bebas Neue",
-        }}
-      >
-        Event Not Found
-      </div>,
-      {
-        width: 1200,
-        height: 630,
-        fonts: [
-          {
-            name: "Bebas Neue",
-            data: titleFont,
-            weight: 400,
-            style: "normal",
-          },
-        ],
-      },
-    );
-  }
-
-  const eventImage = event.thumbImage || event.bannerImage || null;
-
-  const formattedDateEn = new Date(event.date).toLocaleDateString("en-US", {
-    weekday: "short",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
+  const event = await prisma.event.findUnique({
+    where: { slug },
+    select: {
+      name: true,
+      thumbImage: true,
+      bannerImage: true,
+      date: true,
+      address: true,
+      eventType: true,
+      minPackagePrice: true,
+      packages: { where: { isActive: true }, select: { price: true } },
+    },
   });
 
-  // Truncate address to prevent overflow
-  const truncatedAddress = event.address
-    ? event.address.length > 45
-      ? event.address.substring(0, 45) + "..."
-      : event.address
-    : "";
+  const name = event?.name ?? "Merch Sports";
+  const price = event?.packages.length ? Math.min(...event.packages.map((p) => p.price)) : (event?.minPackagePrice ?? null);
+  const priceText = price ? `From ৳${price.toLocaleString("en-IN")}` : "";
+  const place = event ? (event.eventType === "VIRTUAL" ? "Virtual run" : event.address) : "";
+  const placeText = place.length > 48 ? `${place.slice(0, 47)}…` : place;
+
+  // Fonts: Anton (headings), Inter (details), Noto Sans Bengali for any Bangla
+  // characters in the name/price. Missing fonts just fall back.
+  const [heading, body, bangla] = await Promise.all([
+    loadGoogleFont("Anton", 400).catch(() => null),
+    loadGoogleFont("Inter", 600).catch(() => null),
+    loadGoogleFontForText("Noto Sans Bengali", 700, `${name}${priceText}৳`),
+  ]);
+  const fonts = [
+    ...(heading ? [{ name: "Anton", data: heading, weight: 400 as const, style: "normal" as const }] : []),
+    ...(body ? [{ name: "Inter", data: body, weight: 600 as const, style: "normal" as const }] : []),
+    ...(bangla ? [{ name: "Noto Sans Bengali", data: bangla, weight: 700 as const, style: "normal" as const }] : []),
+  ];
+
+  const image = event?.bannerImage || event?.thumbImage || null;
+  const domain = new URL(SITE.url).host.replace(/^www\./, "");
+  const titleSize = name.length > 42 ? 64 : name.length > 26 ? 80 : 96;
 
   return new ImageResponse(
-    <div
-      style={{
-        width: 1200,
-        height: 630,
-        display: "flex",
-        position: "relative",
-        background: "#1a1a1a",
-      }}
-    >
-      {/* Background Image */}
-      {eventImage ? (
+    <div style={{ width: 1200, height: 630, display: "flex", position: "relative", background: GREEN, fontFamily: FONT_STACK }}>
+      {/* Event photo */}
+      {image && (
         <img
-          src={eventImage}
+          src={image}
           width={1200}
           height={630}
           alt=""
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: 1200,
-            height: 630,
-            objectFit: "cover",
-          }}
-        />
-      ) : (
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: 1200,
-            height: 630,
-            background: "linear-gradient(135deg, #99cd43 0%, #5a9a1e 100%)",
-            display: "flex",
-          }}
+          style={{ position: "absolute", top: 0, left: 0, width: 1200, height: 630, objectFit: "cover" }}
         />
       )}
 
-      {/* Simplified Gradient Overlay */}
+      {/* Dark-green fade from the left/bottom so the text is always readable */}
       <div
         style={{
           position: "absolute",
-          bottom: 0,
+          top: 0,
           left: 0,
           width: 1200,
-          height: 280,
-          background:
-            "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 60%, transparent 100%)",
+          height: 630,
           display: "flex",
+          background: `linear-gradient(90deg, ${GREEN} 0%, rgba(13,43,34,0.92) 42%, rgba(13,43,34,0.35) 75%, rgba(13,43,34,0.15) 100%)`,
         }}
       />
 
-      {/* Bottom Content */}
       <div
         style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          width: 1200,
-          padding: "40px 50px",
+          position: "relative",
           display: "flex",
           flexDirection: "column",
-          gap: 16,
+          justifyContent: "space-between",
+          width: 1200,
+          height: 630,
+          padding: "56px 64px",
+          color: "white",
         }}
       >
-        {/* Event Name - using loaded font "Inter" */}
-        <div
-          style={{
-            fontSize: 52,
-            fontFamily: "Inter",
-            fontWeight: 700,
-            color: "#ffffff",
-            lineHeight: 1.2,
-            display: "flex",
-            flexWrap: "wrap",
-          }}
-        >
-          {event.name}
+        {/* Top: brand */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, fontFamily: "Inter", fontSize: 24, letterSpacing: 3, color: "rgba(255,255,255,0.85)" }}>
+          <div style={{ width: 12, height: 12, borderRadius: 9999, background: LIME, display: "flex" }} />
+          MERCH SPORTS
         </div>
 
-        {/* Accent Line - removed boxShadow */}
-        <div
-          style={{
-            width: 100,
-            height: 4,
-            background: "#99cd43",
-            borderRadius: 2,
-            display: "flex",
-          }}
-        />
-
-        {/* Date & Location Row */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 40,
-            marginTop: 8,
-          }}
-        >
-          {/* Date */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              style={{ display: "flex" }}
-            >
-              <rect
-                x="3"
-                y="4"
-                width="18"
-                height="18"
-                rx="2"
-                stroke="#99cd43"
-                strokeWidth="2"
-              />
-              <path d="M3 10H21" stroke="#99cd43" strokeWidth="2" />
-              <path d="M8 2V6" stroke="#99cd43" strokeWidth="2" />
-              <path d="M16 2V6" stroke="#99cd43" strokeWidth="2" />
-            </svg>
-            <div
-              style={{
-                fontSize: 22,
-                fontFamily: "Inter",
-                color: "rgba(255,255,255,0.9)",
-                fontWeight: 400,
-                display: "flex",
-              }}
-            >
-              {formattedDateEn}
-            </div>
+        {/* Name */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 22, maxWidth: 760 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", fontSize: titleSize, lineHeight: 1.02, textTransform: "uppercase" }}>
+            {name}
           </div>
-
-          {/* Divider */}
-          <div
-            style={{
-              width: 2,
-              height: 30,
-              background: "rgba(255,255,255,0.3)",
-              display: "flex",
-            }}
-          />
-
-          {/* Location */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              style={{ display: "flex" }}
-            >
-              <path
-                d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z"
-                stroke="#99cd43"
-                strokeWidth="2"
-              />
-              <circle cx="12" cy="9" r="2.5" fill="#99cd43" />
-            </svg>
-            <div
-              style={{
-                fontSize: 20,
-                fontFamily: "Inter",
-                color: "rgba(255,255,255,0.8)",
-                fontWeight: 400,
-                display: "flex",
-              }}
-            >
-              {truncatedAddress}
-            </div>
+          <div style={{ width: 110, height: 6, background: LIME, borderRadius: 3, display: "flex" }} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: "Inter", fontSize: 28, color: "rgba(255,255,255,0.88)" }}>
+            {event && <div style={{ display: "flex" }}>{dateFmt.format(new Date(event.date))}</div>}
+            {placeText && <div style={{ display: "flex", color: "rgba(255,255,255,0.7)" }}>{placeText}</div>}
           </div>
         </div>
-      </div>
 
-      {/* Brand watermark */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 30,
-          right: 40,
-          fontSize: 14,
-          fontFamily: "Inter",
-          color: "rgba(255,255,255,0.4)",
-          letterSpacing: 2,
-          display: "flex",
-        }}
-      >
-        merchsports.com
+        {/* Bottom: price + domain */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {priceText ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "12px 26px",
+                borderRadius: 9999,
+                background: LIME,
+                color: GREEN,
+                fontSize: 30,
+                fontFamily: "Inter, Noto Sans Bengali",
+              }}
+            >
+              {priceText}
+            </div>
+          ) : (
+            <div style={{ display: "flex" }} />
+          )}
+          <div style={{ display: "flex", fontFamily: "Inter", fontSize: 22, color: "rgba(255,255,255,0.6)" }}>{domain}</div>
+        </div>
       </div>
     </div>,
-    {
-      width: 1200,
-      height: 630,
-      fonts: [
-        { name: "Bebas Neue", data: titleFont, weight: 400, style: "normal" },
-        { name: "Inter", data: bodyFont, weight: 400, style: "normal" },
-      ],
-    },
+    { ...size, fonts },
   );
 }

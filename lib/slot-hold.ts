@@ -22,7 +22,8 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/lib/generated/prisma";
 import { audit, SYSTEM } from "@/lib/audit";
 
-export const SLOT_HOLD_MS = 24 * 60 * 60 * 1000; //60 * 60 * 1000; // 1 hour
+export const SLOT_HOLD_MS = 24 * 60 * 60 * 1000; // 24 hours
+const SLOT_HOLD_HOURS = SLOT_HOLD_MS / (60 * 60 * 1000);
 
 export function newHoldExpiry(now: Date = new Date()): Date {
   return new Date(now.getTime() + SLOT_HOLD_MS);
@@ -208,7 +209,7 @@ export async function releaseExpiredHolds(
         entityType: "order",
         entityId: id,
         eventId: slug.eventId,
-        summary: `Unpaid for over 1 hour: order cancelled, ${slug.qty} slot${slug.qty === 1 ? "" : "s"} released`,
+        summary: `Unpaid for over ${SLOT_HOLD_HOURS} hour${SLOT_HOLD_HOURS === 1 ? "" : "s"}: order cancelled, ${slug.qty} slot${slug.qty === 1 ? "" : "s"} released`,
       });
     }
   }

@@ -39,6 +39,7 @@ const ATTENTION = new Set([
   "payment.amount_mismatch",
   "payment.unknown_status",
   "payment.paid_no_callback",
+  "payment.gateway_error",
 ]);
 
 // Chip style by what kind of change it was — colour plus the verb as text.

@@ -27,6 +27,7 @@ const ATTENTION_ACTIONS = [
   "payment.amount_mismatch",
   "payment.unknown_status",
   "payment.paid_no_callback",
+  "payment.gateway_error",
 ];
 
 const CATEGORY_WHERE: Record<AuditCategory, Prisma.AuditLogWhereInput> = {

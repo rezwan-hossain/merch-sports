@@ -9,6 +9,8 @@ import { getRequestId } from "@/utils/requestUtils";
 import { newHoldExpiry, reclaimReleasedOrder } from "@/lib/slot-hold";
 import { checkPaymentConfig } from "@/lib/payment-config";
 import { reconcileOrder } from "@/lib/payment-reconcile";
+import { reportGatewayFailure } from "@/lib/payment-gateway-alert";
+import { isAxiosError } from "axios";
 
 export async function initiateShurjoPayPayment({
   orderId,
@@ -48,6 +50,7 @@ export async function initiateShurjoPayPayment({
     const config = checkPaymentConfig();
     if (config.block) {
       log.error({ configProblem: config.block }, "payment:config_invalid — refusing to start payment");
+      await reportGatewayFailure({ stage: "config", message: config.block, orderId });
       return {
         success: false,
         error: "Online payment is temporarily unavailable. Please try again later.",
@@ -221,6 +224,13 @@ export async function initiateShurjoPayPayment({
         },
         "external_api:failure — empty token",
       );
+      await reportGatewayFailure({
+        stage: "login",
+        spCode: tokenData.sp_code,
+        message: tokenData.message,
+        orderId: order.id,
+        eventId: order.eventId,
+      });
 
       return {
         success: false,
@@ -278,6 +288,13 @@ export async function initiateShurjoPayPayment({
         },
         "external_api:failure — no checkout_url",
       );
+      await reportGatewayFailure({
+        stage: "create_payment",
+        spCode: paymentResponse.sp_code,
+        message: paymentResponse.message,
+        orderId: order.id,
+        eventId: order.eventId,
+      });
 
       return {
         success: false,
@@ -339,6 +356,22 @@ export async function initiateShurjoPayPayment({
   } catch (error: any) {
     log.error({ err: error, durationMs: Date.now() - start }, "action:error");
     console.error("❌ ShurjoPay error:", error?.message);
+    // Only gateway HTTP failures — database or our own bugs aren't ShurjoPay's.
+    if (isAxiosError(error)) {
+      const body = error.response?.data as { sp_code?: string; message?: string } | undefined;
+      await reportGatewayFailure({
+        stage: !error.response
+          ? "unreachable"
+          : error.config?.url?.includes("get_token")
+            ? "login"
+            : "create_payment",
+        spCode: body?.sp_code ?? null,
+        message:
+          body?.message ??
+          (error.response ? `HTTP ${error.response.status}` : error.code ?? error.message),
+        orderId,
+      });
+    }
     return {
       success: false,
       error: "Failed to initiate payment. Please try again.",

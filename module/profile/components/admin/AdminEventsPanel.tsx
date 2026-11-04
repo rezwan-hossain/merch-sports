@@ -11,6 +11,7 @@ import { EventFilters } from "./EventFilters";
 import { EventOrdersModal } from "./EventOrdersModal";
 import { EventActivityModal } from "./EventActivityModal";
 import { PaymentIssuesBanner } from "./PaymentIssuesBanner";
+import { GatewayAlertBanner } from "./GatewayAlertBanner";
 import { PaymentIssuesModal } from "./PaymentIssuesModal";
 import { getPaymentIssues } from "@/app/actions/payment-issues";
 import type { PaymentIssue } from "@/types/payment-issues";
@@ -109,6 +110,9 @@ export function AdminEventsPanel({
       {/* Content */}
       {view === "list" && (
         <>
+          {/* Online payments can't start (ShurjoPay refusing / unreachable) */}
+          <GatewayAlertBanner />
+
           {/* Payments the automatic handling leaves to a person */}
           <PaymentIssuesBanner
             issues={paymentIssues}

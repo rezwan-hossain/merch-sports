@@ -18,6 +18,7 @@ import { reconcileOrder } from "@/lib/payment-reconcile";
 import { claimSlots, confirmPaidOrder, releaseHold } from "@/lib/slot-hold";
 import { runPostPaymentSteps } from "@/lib/order-confirmation";
 import { revalidateTag } from "next/cache";
+import { getActiveGatewayAlert, type GatewayAlert } from "@/lib/payment-gateway-alert";
 import type {
   GatewayCheck,
   IssueAction,
@@ -40,6 +41,19 @@ const fmt = (v: unknown) => {
   const n = Number(v);
   return Number.isFinite(n) ? n.toLocaleString("en-IN") : String(v);
 };
+
+// ─── Gateway outage ───────────────────────────────────
+// "Runners can't pay right now" — the latest unresolved ShurjoPay failure.
+export async function getGatewayAlert(): Promise<GatewayAlert | null> {
+  const { error } = await requireAdmin();
+  if (error) return null;
+  try {
+    return await getActiveGatewayAlert();
+  } catch (err) {
+    logger.error({ err }, "gatewayAlert:load_failed");
+    return null;
+  }
+}
 
 // ─── List ─────────────────────────────────────────────
 export async function getPaymentIssues(): Promise<{

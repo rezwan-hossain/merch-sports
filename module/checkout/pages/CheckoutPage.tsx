@@ -4,6 +4,7 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import { BillingForm, BillingFormRef } from "../components/BillingForm";
 import { OrderSummary } from "../components/OrderSummary";
+import { CheckoutAlert } from "../components/CheckoutAlert";
 import { HeroText } from "@/components/ui/HeroText";
 import { BillingFormData, CheckoutItem, AppliedCoupon } from "@/types/checkout";
 import { useRouter } from "next/navigation";
@@ -262,11 +263,12 @@ const CheckoutPage = ({
 
       <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8 md:py-12">
         {error && (
-          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-600 text-xs sm:text-sm font-medium">
-              {error}
-            </p>
-          </div>
+          <CheckoutAlert
+            message={error}
+            onRetry={handlePlaceOrder}
+            onDismiss={() => setError("")}
+            retrying={loading}
+          />
         )}
 
         <div className="flex flex-col gap-6 sm:gap-8 lg:flex-row lg:gap-12">

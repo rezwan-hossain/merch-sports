@@ -67,7 +67,12 @@ type Props = {
   retrying: boolean;
 };
 
-export function CheckoutAlert({ message, onRetry, onDismiss, retrying }: Props) {
+export function CheckoutAlert({
+  message,
+  onRetry,
+  onDismiss,
+  retrying,
+}: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const kind = classify(message);
   const style = STYLES[kind];
@@ -84,7 +89,7 @@ export function CheckoutAlert({ message, onRetry, onDismiss, retrying }: Props) 
 
   const body =
     kind === "gateway"
-      ? "We couldn't connect to ShurjoPay just now. Your details are saved — please try again in a few minutes. You won't be charged twice."
+      ? "We couldn't connect to ShurjoPay just now. Your details are saved — please try again in a few minutes."
       : kind === "registered"
         ? "This email already has a confirmed registration for this event. Your confirmation was sent by email, and you can see it in your dashboard."
         : kind === "form"

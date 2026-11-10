@@ -17,7 +17,7 @@ import {
   verifyShurjoPayPayment,
   SP_CODE,
   type ShurjoPayVerificationItem,
-} from "@/lib/shurjopay2";
+} from "@/lib/shurjopay";
 
 export type VerifyResult =
   | { state: "PAID"; item: ShurjoPayVerificationItem }

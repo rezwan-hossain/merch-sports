@@ -1,4 +1,21 @@
 // lib/shurjopay.ts
+//
+// The one ShurjoPay client for the whole app.
+//
+//   Starting a payment (checkout, app/actions/payment.ts):
+//     getShurjoPayToken → createShurjoPayPayment
+//
+//   Checking a payment (callback, reconciler, hold sweep — via lib/payment-verify.ts):
+//     verifyShurjoPayPayment, SP_CODE, getPaymentStatusMessage
+//
+// The two sides deliberately handle a refused login differently:
+//   - checkout's getShurjoPayToken RETURNS ShurjoPay's reply even without a
+//     token, so payment.ts can show "Payment gateway unavailable" and record
+//     the sp_code (lib/payment-gateway-alert.ts);
+//   - verification THROWS when there's no token, so callers treat the answer
+//     as "unsure, try again later" and never as "not paid".
+// Keep it that way — merging the two token functions would break one side.
+
 import axios, { AxiosError } from "axios";
 
 const BASE_URL = process.env.SHURJOPAY_API_URL!;
@@ -7,7 +24,7 @@ const PASSWORD = process.env.SHURJOPAY_PASSWORD!;
 const CALLBACK_URL = process.env.SHURJOPAY_CALLBACK_URL!;
 const SHURJOPAY_PREFIX = process.env.SHURJOPAY_PREFIX;
 
-// ─── Types (CORRECTED based on official docs) ──────
+// ─── Types ──────────────────────────────────────────
 export interface ShurjoPayTokenResponse {
   token: string;
   store_id: number;
@@ -28,7 +45,6 @@ export interface ShurjoPayPaymentResponse {
   transactionStatus: string;
 }
 
-// ✅ CORRECTED: Based on official documentation
 export interface ShurjoPayVerificationItem {
   id: number;
   order_id: string; // shurjoPay payment id
@@ -41,8 +57,8 @@ export interface ShurjoPayVerificationItem {
   usd_amt: number;
   usd_rate: number;
   method: string; // payment method (bKash, cards, etc.)
-  sp_code: number; // ✅ KEY FIELD: 1000 = success, 1001 = declined, 1002 = cancelled
-  sp_message: string; // Response message
+  sp_code: number; // 1000 = success, 1001 = declined, 1002 = cancelled
+  sp_message: string;
   name: string;
   email: string;
   address: string;
@@ -51,10 +67,7 @@ export interface ShurjoPayVerificationItem {
   value2: string;
   value3: string;
   value4: string;
-  // ❌ REMOVED: bank_status, transaction_status, bank_trx_id, invoice_no, customer_order_id
-  // These are NOT in the official documentation!
-
-  // ✅ BUT keep these as optional in case sandbox returns them
+  // Not in the official docs, but sometimes returned.
   bank_status?: string;
   transaction_status?: string;
   bank_trx_id?: string;
@@ -63,58 +76,37 @@ export interface ShurjoPayVerificationItem {
   date_time?: string;
 }
 
-// ─── SP_CODE Constants (from documentation) ─────────
 export const SP_CODE = {
   SUCCESS: 1000,
   DECLINED_BY_BANK: 1001,
   CANCELLED_BY_CUSTOMER: 1002,
 } as const;
 
+// ═══ Starting a payment (checkout) ══════════════════
+
 // ─── Get Token ──────────────────────────────────────
+// Returns ShurjoPay's reply as-is, even when it has no token (see top).
 export async function getShurjoPayToken(): Promise<ShurjoPayTokenResponse> {
-  console.log("🔑 Token request to:", `${BASE_URL}/api/get_token`);
-  console.log("🔑 Environment:", process.env.NODE_ENV);
-
-  try {
-    const { data } = await axios.post(
-      `${BASE_URL}/api/get_token`,
-      {
-        username: USERNAME,
-        password: PASSWORD,
+  const { data } = await axios.post(
+    `${BASE_URL}/api/get_token`,
+    {
+      username: USERNAME,
+      password: PASSWORD,
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
       },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        timeout: 50000,
-      },
-    );
+    },
+  );
 
-    console.log("🔑 ShurjoPay token response:", {
-      token: data.token ? "✅ received" : "❌ missing",
-      store_id: data.store_id,
-      sp_code: data.sp_code,
-      message: data.message,
-    });
+  console.log("🔑 ShurjoPay token response:", {
+    token: data.token ? "✅ received" : "❌ missing",
+    store_id: data.store_id,
+    message: data.message,
+  });
 
-    if (!data.token) {
-      throw new Error(`Token not received: ${data.message || "Unknown error"}`);
-    }
-
-    return data as ShurjoPayTokenResponse;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError;
-      console.error("🔑 Token request failed:", {
-        status: axiosError.response?.status,
-        data: axiosError.response?.data,
-      });
-      throw new Error(
-        `ShurjoPay token error: ${axiosError.response?.status} - ${JSON.stringify(axiosError.response?.data)}`,
-      );
-    }
-    throw error;
-  }
+  return data as ShurjoPayTokenResponse;
 }
 
 // ─── Create Payment ─────────────────────────────────
@@ -169,36 +161,67 @@ export async function createShurjoPayPayment({
     orderId,
     customerName,
     customerPhone,
-    return_url: CALLBACK_URL,
-    store_id: storeId,
   });
 
-  try {
-    const { data } = await axios.post(`${BASE_URL}/api/secret-pay`, payload, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      timeout: 50000,
-    });
+  const { data } = await axios.post(`${BASE_URL}/api/secret-pay`, payload, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
 
-    console.log("💳 ShurjoPay create payment response:", {
-      checkout_url: data.checkout_url ? "✅ received" : "❌ missing",
-      sp_order_id: data.sp_order_id,
+  console.log("💳 ShurjoPay create payment response:", {
+    checkout_url: data.checkout_url ? "✅ received" : "❌ missing",
+    sp_order_id: data.sp_order_id,
+    message: data.message,
+  });
+
+  return data as ShurjoPayPaymentResponse;
+}
+
+// ═══ Checking a payment (callback / reconciler / sweep) ═══
+
+// Throws when ShurjoPay gives no token (see top).
+async function getVerificationToken(): Promise<ShurjoPayTokenResponse> {
+  console.log("🔑 Token request to:", `${BASE_URL}/api/get_token`);
+  console.log("🔑 Environment:", process.env.NODE_ENV);
+
+  try {
+    const { data } = await axios.post(
+      `${BASE_URL}/api/get_token`,
+      {
+        username: USERNAME,
+        password: PASSWORD,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        timeout: 50000,
+      },
+    );
+
+    console.log("🔑 ShurjoPay token response:", {
+      token: data.token ? "✅ received" : "❌ missing",
+      store_id: data.store_id,
       sp_code: data.sp_code,
       message: data.message,
     });
 
-    return data as ShurjoPayPaymentResponse;
+    if (!data.token) {
+      throw new Error(`Token not received: ${data.message || "Unknown error"}`);
+    }
+
+    return data as ShurjoPayTokenResponse;
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError;
-      console.error("💳 Create payment failed:", {
+      console.error("🔑 Token request failed:", {
         status: axiosError.response?.status,
         data: axiosError.response?.data,
       });
       throw new Error(
-        `ShurjoPay payment error: ${axiosError.response?.status}`,
+        `ShurjoPay token error: ${axiosError.response?.status} - ${JSON.stringify(axiosError.response?.data)}`,
       );
     }
     throw error;
@@ -211,7 +234,7 @@ export async function verifyShurjoPayPayment(
 ): Promise<ShurjoPayVerificationItem[]> {
   console.log("🔍 Verifying payment for order:", spOrderId);
 
-  const tokenData = await getShurjoPayToken();
+  const tokenData = await getVerificationToken();
 
   try {
     const { data } = await axios.post(
@@ -226,13 +249,12 @@ export async function verifyShurjoPayPayment(
       },
     );
 
-    // ✅ Log raw response for debugging
     console.log(
       "✅ ShurjoPay RAW verify response:",
       JSON.stringify(data, null, 2),
     );
 
-    // Handle different response structures
+    // ShurjoPay has answered in several shapes; normalise to an array.
     let verificationData: ShurjoPayVerificationItem[];
 
     if (Array.isArray(data)) {
@@ -246,7 +268,6 @@ export async function verifyShurjoPayPayment(
       verificationData = [];
     }
 
-    // ✅ Log parsed data with sp_code focus
     console.log("✅ Parsed verification data:", {
       count: verificationData.length,
       firstItem: verificationData[0]
@@ -277,54 +298,7 @@ export async function verifyShurjoPayPayment(
   }
 }
 
-// ✅ CORRECTED: Check success using sp_code ONLY (per documentation)
-export function isPaymentSuccessful(
-  paymentInfo: ShurjoPayVerificationItem,
-): boolean {
-  const spCode = Number(paymentInfo.sp_code);
-
-  console.log("🔍 Checking payment success:", {
-    sp_code: paymentInfo.sp_code,
-    sp_code_as_number: spCode,
-    sp_message: paymentInfo.sp_message,
-    is_success: spCode === SP_CODE.SUCCESS,
-  });
-
-  // ✅ PRIMARY CHECK: sp_code === 1000
-  return spCode === SP_CODE.SUCCESS;
-}
-
-// ✅ CORRECTED: Check cancelled using sp_code
-export function isPaymentCancelled(
-  paymentInfo: ShurjoPayVerificationItem,
-): boolean {
-  const spCode = Number(paymentInfo.sp_code);
-
-  // sp_code 1002 = cancelled by customer
-  return spCode === SP_CODE.CANCELLED_BY_CUSTOMER;
-}
-
-// ✅ CORRECTED: Check declined/failed using sp_code
-export function isPaymentDeclined(
-  paymentInfo: ShurjoPayVerificationItem,
-): boolean {
-  const spCode = Number(paymentInfo.sp_code);
-
-  // sp_code 1001 = declined by bank
-  return spCode === SP_CODE.DECLINED_BY_BANK;
-}
-
-// ✅ NEW: Check if payment failed (any non-success code)
-export function isPaymentFailed(
-  paymentInfo: ShurjoPayVerificationItem,
-): boolean {
-  const spCode = Number(paymentInfo.sp_code);
-
-  // Any code other than 1000 is a failure
-  return spCode !== SP_CODE.SUCCESS;
-}
-
-// ✅ NEW: Get human-readable status
+// ─── Human-readable status ──────────────────────────
 export function getPaymentStatusMessage(
   paymentInfo: ShurjoPayVerificationItem,
 ): string {

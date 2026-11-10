@@ -67,7 +67,7 @@ export async function register() {
   };
   setInterval(reconcile, RECONCILE_INTERVAL_MS).unref();
   setTimeout(reconcile, 45_000).unref();
-  const { verifyShurjoPayPayment, SP_CODE } = await import("./lib/shurjopay2");
+  const { verifyShurjoPayPayment, SP_CODE } = await import("./lib/shurjopay");
 
   // Before releasing an order that reached ShurjoPay, ask ShurjoPay whether it
   // was actually paid (the callback can be lost). Throws on API errors, which

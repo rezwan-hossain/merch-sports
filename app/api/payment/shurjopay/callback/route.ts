@@ -1,6 +1,6 @@
 // app/api/payment/shurjopay/callback/route.ts
 import { prisma } from "@/lib/prisma";
-import { getPaymentStatusMessage, SP_CODE } from "@/lib/shurjopay2";
+import { getPaymentStatusMessage, SP_CODE } from "@/lib/shurjopay";
 import { NextRequest, NextResponse, after } from "next/server";
 
 import { verifyPayment } from "@/lib/payment-verify";

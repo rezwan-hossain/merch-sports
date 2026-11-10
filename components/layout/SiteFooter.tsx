@@ -22,6 +22,7 @@ const socials = [
 ];
 
 const exploreLinks = [
+  { label: "About Us", href: "/about" },
   { label: "Events", href: "/events" },
   { label: "Distances", href: "/#categories" },
   { label: "Schedule", href: "/#schedule" },

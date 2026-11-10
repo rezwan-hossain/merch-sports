@@ -27,7 +27,15 @@ const PAYMENT_METHODS: PaymentMethod[] = [
     name: "SSLCommerz",
     logo: "/icons/sslcommerz.png",
     tagline: "Mobile banking, cards & net banking",
-    supports: ["bKash", "Nagad", "Rocket", "Visa", "Mastercard", "AMEX", "Net banking"],
+    supports: [
+      "bKash",
+      "Nagad",
+      "Rocket",
+      "Visa",
+      "Mastercard",
+      "AMEX",
+      "Net banking",
+    ],
   },
 ];
 
@@ -43,13 +51,21 @@ type Props = {
   sslcommerzEnabled: boolean;
 };
 
-export function PaymentMethodSelector({ value, onChange, sslcommerzEnabled }: Props) {
-  const methods = PAYMENT_METHODS.filter((m) => m.id !== "sslcommerz" || sslcommerzEnabled);
+export function PaymentMethodSelector({
+  value,
+  onChange,
+  sslcommerzEnabled,
+}: Props) {
+  const methods = PAYMENT_METHODS.filter(
+    (m) => m.id !== "sslcommerz" || sslcommerzEnabled,
+  );
 
   return (
-    <fieldset className="mb-6 min-w-0 sm:mb-8">
+    <fieldset className="mb-6 min-w-0 sm:mb-8 mt-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <legend className="text-sm font-semibold text-foreground">Payment method</legend>
+        <legend className="text-sm font-semibold text-foreground">
+          Payment method
+        </legend>
         <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
           <Lock className="h-3 w-3" aria-hidden />
           Secure
@@ -86,7 +102,9 @@ export function PaymentMethodSelector({ value, onChange, sslcommerzEnabled }: Pr
                   aria-hidden
                   className={cn(
                     "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-200",
-                    isSelected ? "border-neon-lime bg-neon-lime" : "border-gray-300",
+                    isSelected
+                      ? "border-neon-lime bg-neon-lime"
+                      : "border-gray-300",
                   )}
                 >
                   <Check
@@ -99,7 +117,11 @@ export function PaymentMethodSelector({ value, onChange, sslcommerzEnabled }: Pr
                 </span>
 
                 <span className="flex h-9 w-16 sm:w-[84px] shrink-0 items-center justify-center rounded-lg bg-gray-50 px-2 ring-1 ring-gray-100">
-                  <img src={method.logo} alt="" className="max-h-5 w-full object-contain" />
+                  <img
+                    src={method.logo}
+                    alt=""
+                    className="max-h-5 w-full object-contain"
+                  />
                 </span>
 
                 <span className="min-w-0 flex-1">
@@ -116,12 +138,17 @@ export function PaymentMethodSelector({ value, onChange, sslcommerzEnabled }: Pr
               <div
                 className={cn(
                   "grid transition-[grid-template-rows,opacity] duration-300 ease-out",
-                  isSelected ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                  isSelected
+                    ? "grid-rows-[1fr] opacity-100"
+                    : "grid-rows-[0fr] opacity-0",
                 )}
               >
                 <div className="overflow-hidden">
                   <div className="mx-3 mb-3 border-t border-gray-100 pt-3 sm:mx-3.5 sm:mb-3.5">
-                    <ul className="flex flex-wrap gap-1.5" aria-label={`${method.name} accepts`}>
+                    <ul
+                      className="flex flex-wrap gap-1.5"
+                      aria-label={`${method.name} accepts`}
+                    >
                       {method.supports.map((s) => (
                         <li
                           key={s}
@@ -132,9 +159,12 @@ export function PaymentMethodSelector({ value, onChange, sslcommerzEnabled }: Pr
                       ))}
                     </ul>
                     <p className="mt-2.5 flex items-start gap-1.5 text-xs leading-relaxed text-gray-500">
-                      <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0 text-green-600" aria-hidden />
-                      You&apos;ll pay on {method.name}&apos;s secure page, then come right back
-                      here — please keep this tab open.
+                      <ShieldCheck
+                        className="mt-px h-3.5 w-3.5 shrink-0 text-green-600"
+                        aria-hidden
+                      />
+                      You&apos;ll pay on {method.name}&apos;s secure page, then
+                      come right back here — please keep this tab open.
                     </p>
                   </div>
                 </div>

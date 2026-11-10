@@ -9,17 +9,19 @@ import {
   RefreshCw,
   Mail,
 } from "lucide-react";
+import { LegalDocument, type LegalSection } from "./LegalDocument";
+import { BUSINESS_NAME } from "@/lib/business-info";
 
-const sections = [
+const sections: LegalSection[] = [
   {
     icon: Database,
     title: "1. Information We Collect",
-    content: `6
+    content: `
       We collect information to provide better services to our marathon participants. The types of information we collect include:
       
       • Personal Information: Name, email address, phone number, date of birth, gender, and emergency contact details provided during registration.
       • Health Information: Blood group, medical conditions, and physical fitness information relevant to marathon participation.
-      • Payment Information: Transaction details processed through our secure payment gateways (ShurjoPay, bKash, Nagad).
+      • Payment Information: Transaction details processed through our secure payment gateways (ShurjoPay and SSLCommerz — bKash, Nagad, Rocket, cards and internet banking).
       • Event Data: Race times, participation history, and performance statistics.
       • Usage Data: Information about how you interact with our website, including IP address, browser type, and pages visited.
     `,
@@ -70,7 +72,7 @@ const sections = [
     content: `
       We may share your information with trusted third parties for event operations:
       
-      • Payment Processors: ShurjoPay, bKash, and Nagad for secure payment processing.
+      • Payment Processors: ShurjoPay and SSLCommerz for secure payment processing (bKash, Nagad, Rocket, cards and internet banking).
       • Timing Companies: Official timing partners for accurate race time recording.
       • Medical Services: Emergency medical teams for participant safety during events.
       • Analytics Providers: Google Analytics for website performance analysis.
@@ -125,87 +127,27 @@ const sections = [
 
 export default function PrivacyPolicyContent() {
   return (
-    <div className="rounded-xl sm:rounded-2xl bg-white p-4 sm:p-6 md:p-8 shadow-lg border border-gray-100">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-          Privacy Policy
-        </h1>
-      </div>
-
-      <p className="mb-6 text-xs sm:text-sm text-gray-500">
-        Last updated: January 15, 2026
-      </p>
-
-      <div className="mb-6 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-xs sm:text-sm text-blue-800">
-          <strong>Our Commitment:</strong> At Bengal Marathon, we are committed
-          to protecting your privacy and ensuring the security of your personal
-          information. This Privacy Policy explains how we collect, use, store,
-          and protect your data when you use our services and participate in our
-          events.
-        </p>
-      </div>
-
-      <div className="space-y-6 sm:space-y-8 text-gray-700">
-        {sections.map((section, index) => {
-          const IconComponent = section.icon;
-          return (
-            <div
-              key={index}
-              className="scroll-mt-20 border-b border-gray-100 pb-6 sm:pb-8 last:border-b-0"
-              id={`section-${index + 1}`}
-            >
-              <div className="flex items-start gap-3 sm:gap-4">
-                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-neon-lime/20 rounded-lg flex items-center justify-center">
-                  <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">
-                    {section.title}
-                  </h2>
-                  <div className="text-sm sm:text-base text-gray-600 leading-relaxed whitespace-pre-line">
-                    {section.content}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-8 sm:mt-10 pt-6 sm:pt-8 border-t border-gray-200">
-        {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg">
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">
-              Data Retention
-            </h3>
-            <p className="text-xs sm:text-sm text-gray-600">
-              We retain your personal data for as long as necessary to fulfill
-              the purposes outlined in this policy, unless a longer retention
-              period is required by law.
-            </p>
-          </div>
-          <div className="p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg">
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">
-              Children's Privacy
-            </h3>
-            <p className="text-xs sm:text-sm text-gray-600">
-              Our services are not directed to children under 13. We do not
-              knowingly collect personal information from children without
-              parental consent.
-            </p>
-          </div>
-        </div> */}
-      </div>
-
-      <div className="mt-6 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg">
-        <p className="text-xs sm:text-sm text-green-800">
-          <strong>Your Consent:</strong> By using our website and registering
-          for our marathon events, you consent to the collection and use of your
-          information as described in this Privacy Policy. If you do not agree
-          with this policy, please do not use our services.
-        </p>
-      </div>
-    </div>
+    <LegalDocument
+      policy="privacy"
+      heroTitle="Privacy Policy"
+      title="Privacy Policy"
+      lastUpdated="November 10, 2026"
+      summary={
+        <>
+          <strong>Our Commitment:</strong> At {BUSINESS_NAME}, we are committed to protecting your
+          privacy and ensuring the security of your personal information. This Privacy Policy
+          explains how we collect, use, store, and protect your data when you use our services and
+          participate in our events.
+        </>
+      }
+      sections={sections}
+      closing={
+        <>
+          <strong>Your Consent:</strong> By using our website and registering for our marathon
+          events, you consent to the collection and use of your information as described in this
+          Privacy Policy. If you do not agree with this policy, please do not use our services.
+        </>
+      }
+    />
   );
 }

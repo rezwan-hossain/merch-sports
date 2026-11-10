@@ -7,11 +7,7 @@ import { ArrowUpRight, Facebook, FileBadge, Heart, Instagram, Mail, MapPin, Phon
 import Link from "next/link";
 import Image from "next/image";
 import CurrentYear from "../ui/CurrentYear";
-
-const EMAIL = "info@merchcommunication.com";
-const PHONE = "+8801862221943";
-const ADDRESS = "House 32, Road 08, Block H, Mirpur 2, Dhaka";
-const TRADE_LICENSE = "TRAD/DNCC/019367/2024";
+import { ADDRESS, EMAIL, PHONE, TRADE_LICENSE } from "@/lib/business-info";
 
 // Developer credit in the bottom bar ("Made with ♥ by …").
 const DEVELOPER_NAME = "Rezwan Hossain";
@@ -39,6 +35,7 @@ const helpLinks = [
   { label: "My dashboard", href: "/dashboard" },
   { label: "Terms & Conditions", href: "/terms-and-conditions" },
   { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Return & Refund Policy", href: "/refund-policy" },
 ];
 
 function LinkColumn({ title, links }: { title: string; links: { label: string; href: string }[] }) {

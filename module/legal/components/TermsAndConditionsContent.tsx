@@ -1,5 +1,6 @@
 // module/legal/components/TermsAndConditionsContent.tsx
-const sections = [
+import { LegalDocument, type LegalSection } from "./LegalDocument";
+const sections: LegalSection[] = [
   {
     title: "1. Acceptance of Terms",
     content:
@@ -26,7 +27,7 @@ const sections = [
     title: "4. Payment & Pricing",
     content: `
       • All prices are displayed in Bangladeshi Taka (৳) and include applicable taxes.
-      • Payment must be made through our approved payment gateways (ShurjoPay, bKash, Nagad, or card payment).
+      • Payment must be made through our approved payment gateways (ShurjoPay or SSLCommerz — bKash, Nagad, Rocket, cards or internet banking).
       • Tickets are confirmed only after successful payment processing.
       • Price changes may occur without prior notice for future events.
     `,
@@ -38,6 +39,7 @@ const sections = [
       • If the event is cancelled due to circumstances beyond our control (force majeure), participants may receive a partial refund or credit for future events at the organizers' discretion.
       • No refunds will be issued for no-shows or failure to complete the race.
       • Transfer of registration to another participant may be permitted up to 7 days before the event, subject to an administrative fee.
+      • Full details, including how to request a refund and the refund timeline, are in our Return & Refund Policy (/refund-policy).
     `,
   },
   {
@@ -153,59 +155,27 @@ const sections = [
 
 export default function TermsAndConditionsContent() {
   return (
-    <div className="rounded-xl sm:rounded-2xl bg-white p-4 sm:p-6 md:p-8 shadow-lg border border-gray-100">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-          Terms and Conditions
-        </h1>
-        <span className="text-xs sm:text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full w-fit">
-          Marathon Event Registration
-        </span>
-      </div>
-
-      <p className="mb-6 text-xs sm:text-sm text-gray-500">
-        Last updated: January 15, 2026
-      </p>
-
-      <div className="mb-6 p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <p className="text-xs sm:text-sm text-amber-800">
-          <strong>Important:</strong> Please read these Terms and Conditions
-          carefully before purchasing your marathon ticket. By completing your
-          registration and payment, you acknowledge that you have read,
-          understood, and agree to be bound by these terms.
-        </p>
-      </div>
-
-      <div className="space-y-6 sm:space-y-8 text-gray-700">
-        {sections.map((section, index) => (
-          <div key={index} className="scroll-mt-20" id={`section-${index + 1}`}>
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">
-              {section.title}
-            </h2>
-            <div className="text-sm sm:text-base text-gray-600 leading-relaxed whitespace-pre-line">
-              {section.content}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-8 sm:mt-10 pt-6 sm:pt-8 border-t border-gray-200">
-        <div className="p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-xs sm:text-sm text-green-800">
-            <strong>Agreement:</strong> By checking the "I agree with terms and
-            conditions" checkbox during checkout, you confirm that you have
-            read, understood, and accept all the terms and conditions stated
-            above. You also acknowledge that you are voluntarily participating
-            in the marathon event at your own risk.
-          </p>
-        </div>
-      </div>
-
-      {/* <div className="mt-6 text-center">
-        <p className="text-xs text-gray-400">
-          © {new Date().getFullYear()} Bengal Marathon. All rights reserved.
-        </p>
-      </div> */}
-    </div>
+    <LegalDocument
+      policy="terms"
+      heroTitle="Terms & Conditions"
+      title="Terms and Conditions"
+      lastUpdated="November 10, 2026"
+      summary={
+        <>
+          <strong>Important:</strong> Please read these Terms and Conditions carefully before
+          purchasing your marathon ticket. By completing your registration and payment, you
+          acknowledge that you have read, understood, and agree to be bound by these terms.
+        </>
+      }
+      sections={sections}
+      closing={
+        <>
+          <strong>Agreement:</strong> By ticking the agreement checkbox during checkout, you
+          confirm that you have read, understood, and accept these Terms and Conditions, our
+          Privacy Policy and our Return &amp; Refund Policy. You also acknowledge that you are
+          voluntarily participating in the marathon event at your own risk.
+        </>
+      }
+    />
   );
 }

@@ -42,7 +42,8 @@ export const OrderSummary = ({
   const discount = appliedCoupon?.discountAmount || 0;
   const hasDiscount = discount > 0;
 
-  // Privacy consent — unticked by default; the runner must tick it to pay.
+  // Policy consent (T&C, Privacy, Refund) — unticked by default; the runner
+  // must tick it to pay. SSLCommerz requires a blank box linking all three.
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
 
   const isButtonDisabled = loading || !isFormValid || !agreedToPrivacy;
@@ -126,7 +127,7 @@ export const OrderSummary = ({
         sslcommerzEnabled={sslcommerzEnabled}
       />
 
-      {/* Privacy consent (unticked by default — required to pay) */}
+      {/* Policy consent — T&C, Privacy, Refund (unticked by default, required to pay) */}
       <label className="mb-6 sm:mb-8 flex cursor-pointer items-start gap-2.5 rounded-lg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-neon-lime/50 has-[:focus-visible]:ring-offset-2">
         <input
           type="checkbox"
@@ -143,12 +144,18 @@ export const OrderSummary = ({
           {agreedToPrivacy && <Check className="h-3 w-3 text-black" strokeWidth={3} />}
         </span>
         <span className="text-xs leading-relaxed text-muted-foreground">
-          Your personal data will be used to process your order. I agree to the{" "}
-          <Link
-            href="/privacy-policy"
-            className="underline text-foreground hover:text-primary"
-          >
-            privacy policy
+          I have read and agree to the{" "}
+          {/* New tab: following a link must not lose the filled-in form */}
+          <Link href="/terms-and-conditions" target="_blank" rel="noopener" className="underline text-foreground hover:text-primary">
+            Terms &amp; Conditions
+          </Link>
+          ,{" "}
+          <Link href="/privacy-policy" target="_blank" rel="noopener" className="underline text-foreground hover:text-primary">
+            Privacy Policy
+          </Link>{" "}
+          and{" "}
+          <Link href="/refund-policy" target="_blank" rel="noopener" className="underline text-foreground hover:text-primary">
+            Return &amp; Refund Policy
           </Link>
           .
         </span>
@@ -157,7 +164,7 @@ export const OrderSummary = ({
       {/* Consent hint when unticked */}
       {!agreedToPrivacy && (
         <p className="mb-3 text-xs text-amber-600 text-center">
-          Tick the box above to agree to the privacy policy and continue
+          Tick the box above to agree to our policies and continue
         </p>
       )}
 

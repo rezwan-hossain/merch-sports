@@ -225,12 +225,30 @@ It goes to the `ipn_url` we send when starting each payment (`api.ts` →
 
 ### How we handle it — `app/api/payment/sslcommerz/ipn/route.ts`
 
+This follows SSLCommerz's "Validate Payment with IPN" section
+(https://developer.sslcommerz.com/doc/v4/) step by step:
+
+| SSLCommerz's docs say | We do it in |
+|---|---|
+| 1. Grab the POST notification | `readCallback()` — reads `tran_id` + `val_id`; junk `tran_id` → 400 |
+| 2. Make sure the post wasn't tampered with | We never trust the posted `status`/`amount`; step 3 asks SSLCommerz itself |
+| 3. Call the Validation API with `val_id` | `confirmPayment()` → ⑤ `validatePayment()` (falls back to `getTransaction(tran_id)`) |
+| 4. Check status `VALID`/`VALIDATED`, amount and currency against **your** database, and that the transaction exists | `confirm-payment.ts` → `findProblem()` (+ our order id and the risk flag) |
+| 5. "Check for the status — VALID, FAILED, CANCEL — to update your order status" | Paid → order confirmed. Failed / cancelled / expired → `releaseSlotIfEnded()` frees the slot |
+| 6. Reply (any message) | `{ ok: true }` with HTTP 200 |
+
 ```
 ④ readCallback()          read tran_id + val_id from the form; junk tran_id → 400
 ⑤ confirmPayment()        Validation API (val_id) → confirm the order if really paid
                           (same function as the success page — confirm-payment.ts)
+   not paid?              releaseSlotIfEnded() → free the slot, but only if SSLCommerz
+                          says the attempt FAILED / CANCELLED / EXPIRED
    return 200 { ok: true }
 ```
+
+`VALIDATED` (from the Validation API) means "a successful transaction, but you've
+already validated it before" — e.g. the success page asked first. We treat it as paid;
+`confirmPaidOrder()` makes sure it's only confirmed once.
 
 Things to know:
 
@@ -239,13 +257,20 @@ Things to know:
 - **IPN and the success redirect usually arrive at the same time.** Both call
   `confirmSslCommerzPayment()`; only the first one confirms and sends the email/SMS,
   the other gets `ALREADY_PAID`. Safe to receive either one, both, or repeats.
-- **The IPN never frees a slot.** Cancelled/failed attempts are released by the
-  `fail` / `cancel` callbacks (after SSLCommerz confirms) or by the hourly sweep.
+- **A failed / cancelled / expired IPN frees the runner's slot** — only when SSLCommerz
+  itself says that attempt ended, and only for the order's **current** attempt (an old
+  attempt's "cancelled" never touches a newer one the runner is paying now). Whether
+  it's recorded as `payment.cancelled` or `payment.declined` comes from SSLCommerz's
+  answer. The `fail` / `cancel` redirects do the same; if both arrive, the slot is
+  freed once. Anything else unpaid is left to the hourly sweep.
+- **A paid-but-wrong payment never frees a slot.** Short amount, wrong order or
+  risky → it's held for an admin (Payment issues), slot kept.
 - **Answer 200 quickly.** The email/SMS runs after the response (Next's `after()`),
   so SSLCommerz isn't kept waiting.
-- SSLCommerz's own PHP library also checks an MD5 `verify_sign` on the IPN. We don't
-  need it: step ⑤ confirms everything server-to-server with SSLCommerz, which is
-  stronger than a hash.
+- **`verify_sign` / `verify_key` (hash) are not used.** The docs don't explain how to
+  compute them, and SSLCommerz's own PHP library defines a hash check
+  (`SSLCOMMERZ_hash_verify`) but never calls it — it relies on the Validation API,
+  like we do. Asking SSLCommerz server-to-server is stronger than any hash.
 
 ### Setting it up (live)
 
@@ -256,7 +281,10 @@ Things to know:
    SSLCommerz can't reach `localhost`. The code refuses to start a live payment
    otherwise (`config.ts` → `getSiteUrl()`).
 3. Nothing in front of the app (nginx, firewall, Cloudflare) may block `POST`s
-   from SSLCommerz to `/api/payment/sslcommerz/ipn`.
+   from SSLCommerz to `/api/payment/sslcommerz/ipn`. SSLCommerz's docs: the listener
+   "must use the common port like 80 or 443", "must be reachable from Internet", and
+   you should "white-list the SSLCOMMERZ IPs at your network firewall" (the IP list is
+   in their docs — check it there, it can change).
 
 ### Is it working?
 

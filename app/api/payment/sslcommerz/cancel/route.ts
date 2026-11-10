@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     if (!orderId) return redirectTo(request, "/payment/failed?reason=payment_not_found");
 
     // Not paid: free the runner's slot (only if SSLCommerz confirms it ended).
-    await releaseSlotIfEnded(tranId, "cancel", log);
+    await releaseSlotIfEnded(tranId, log);
 
     // ⑥ → our "payment cancelled" page (with a "Try again" button)
     return redirectTo(request, `/payment/failed?orderId=${orderId}&reason=cancelled`);

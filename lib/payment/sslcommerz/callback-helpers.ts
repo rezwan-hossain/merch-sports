@@ -80,12 +80,13 @@ export function pageForResult(result: string, orderId: string | null): string | 
 }
 
 /**
- * The customer cancelled, or the payment failed. Free their slot right away —
- * but only when SSLCommerz itself says the attempt ended, and only for the
- * order's current attempt (a cancel from an older attempt must not touch a
- * newer one the customer may be paying right now).
+ * The attempt didn't pay (customer cancelled, bank declined, or it expired).
+ * Free the runner's slot right away — but only when SSLCommerz itself says
+ * the attempt ended, and only for the order's current attempt (a cancel from
+ * an older attempt must not touch a newer one the customer may be paying now).
+ * Used by the fail/cancel redirects (⑥) and the IPN (④).
  */
-export async function releaseSlotIfEnded(tranId: string, why: "cancel" | "fail", log: ChildLogger) {
+export async function releaseSlotIfEnded(tranId: string, log: ChildLogger) {
   const check = await getTransaction(tranId);
   if (check.status !== "FAILED") {
     log.info({ status: check.status }, "slot_kept — SSLCommerz doesn't say this attempt ended");
@@ -102,9 +103,12 @@ export async function releaseSlotIfEnded(tranId: string, why: "cancel" | "fail",
   if (!eventSlug) return; // someone else changed the order first
 
   revalidateTag(`event-${eventSlug}`, "max"); // event page shows the freed slot
+  // Cancelled vs declined comes from SSLCommerz's answer, not from which URL
+  // was called — so the IPN and the redirects record the same thing.
+  const cancelled = check.transaction.status === "CANCELLED";
   await audit({
     actor: SSLCOMMERZ_SYSTEM,
-    action: why === "cancel" ? "payment.cancelled" : "payment.declined",
+    action: cancelled ? "payment.cancelled" : "payment.declined",
     entityType: "payment",
     entityId: payment.orderId,
     eventId: payment.order.eventId,

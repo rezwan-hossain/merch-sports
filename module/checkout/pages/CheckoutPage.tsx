@@ -241,8 +241,9 @@ const CheckoutPage = ({
         }
 
         if (paymentResult.checkoutUrl) {
-          // Send the runner to the gateway's payment page
-          // (for SSLCommerz this is step ③ — see lib/payment/sslcommerz/README.md)
+          // Send the runner to the gateway's payment page:
+          // ShurjoPay step ⑤ (lib/payment/shurjopay/index.ts),
+          // SSLCommerz step ③ (lib/payment/sslcommerz/README.md)
           window.location.href = paymentResult.checkoutUrl;
           return;
         }

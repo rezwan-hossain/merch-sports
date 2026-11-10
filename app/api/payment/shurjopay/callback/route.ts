@@ -1,4 +1,8 @@
 // app/api/payment/shurjopay/callback/route.ts
+//
+// ⑥ Customer back to us (return_url) → ⑦ Verify Payment → ⑧ Redirect to our page.
+// Steps ①–⑧ are listed at the top of lib/payment/shurjopay/index.ts.
+// The order_id in the URL is never trusted — ⑦ asks ShurjoPay directly.
 import { prisma } from "@/lib/prisma";
 import { getPaymentStatusMessage, SP_CODE } from "@/lib/payment/shurjopay";
 import { NextRequest, NextResponse, after } from "next/server";
@@ -18,6 +22,7 @@ const fmtAmount = (v: unknown) => {
 import { confirmPaidOrder, releaseHold } from "@/lib/slot-hold";
 import { revalidateTag } from "next/cache";
 
+// ⑥ Customer back to us — ShurjoPay redirects the browser here with ?order_id=<sp_order_id>
 export async function GET(request: NextRequest) {
   const requestId = await getRequestId();
   const start = Date.now();
@@ -69,7 +74,7 @@ export async function GET(request: NextRequest) {
       { externalApi: { service: "shurjopay", operation: "verify" }, spOrderId },
       "external_api:start",
     );
-    // ─── Verify payment with ShurjoPay ──────────────
+    // ─── ⑦ Verify payment with ShurjoPay ────────────
     console.log("🔍 Verifying payment with ShurjoPay...");
 
     const verifyStart = Date.now();
@@ -251,6 +256,7 @@ export async function GET(request: NextRequest) {
       is_declined: spCode === SP_CODE.DECLINED_BY_BANK,
     });
 
+    // ⑧ From here on: act on ⑦'s sp_code, then redirect the customer to our page.
     // ✅ SUCCESS: sp_code === 1000
     if (spCode === SP_CODE.SUCCESS) {
       log.info({ spCode, orderId: payment.orderId }, "payment:success");
@@ -570,8 +576,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Server-to-server notification (IPN) or a form-post redirect. ShurjoPay may
-// send the id as JSON, as a form, or only in the query string — accept all.
+// ⑥ as a POST: a form-post redirect (or a notification). ShurjoPay may send the
+// id as JSON, as a form, or only in the query string — accept all, then run GET.
 export async function POST(request: NextRequest) {
   const requestId = await getRequestId();
 

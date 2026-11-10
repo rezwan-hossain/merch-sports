@@ -200,7 +200,7 @@ export async function initiateShurjoPayPayment({
       // PENDING manual orders fall through unchanged (no hold to refresh).
     }
 
-    // Step 1: Get ShurjoPay token
+    // Step 1: ① Request Token → ② Return Token   (lib/payment/shurjopay)
     log.info(
       { externalApi: { service: "shurjopay", operation: "getToken" } },
       "external_api:start",
@@ -250,7 +250,7 @@ export async function initiateShurjoPayPayment({
       "external_api:success",
     );
 
-    // Step 2: Create ShurjoPay payment
+    // Step 2: ③ Create Payment → ④ Return checkout_url   (lib/payment/shurjopay)
 
     log.info(
       {
@@ -316,6 +316,7 @@ export async function initiateShurjoPayPayment({
     );
 
     // Step 3: Update payment record with ShurjoPay order ID
+    // (the callback ⑥ and verification ⑦ find the order by this sp_order_id)
     const updateStart = Date.now();
 
     await prisma.payment.update({
@@ -347,7 +348,7 @@ export async function initiateShurjoPayPayment({
       },
       "action:success",
     );
-    // Return checkout URL
+    // Return checkout URL — the checkout page does ⑤ (redirects the customer there)
     return {
       success: true,
       error: "",

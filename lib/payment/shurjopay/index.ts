@@ -2,6 +2,22 @@
 //
 // The one ShurjoPay client for the whole app.
 //
+// ─── ShurjoPay steps ①–⑧ (search the code for e.g. "⑦") ────────────────────
+//
+//   ① Request Token          getShurjoPayToken()     POST {API}/api/get_token
+//   ② Return Token           getShurjoPayToken()     ← token + store_id
+//   ③ Create Payment         createShurjoPayPayment() POST {API}/api/secret-pay
+//   ④ Return checkout_url    createShurjoPayPayment() ← checkout_url + sp_order_id
+//   ⑤ Redirect Customer to Payment Page   module/checkout/pages/CheckoutPage.tsx
+//   ⑥ Customer back to us (return_url)   app/api/payment/shurjopay/callback/route.ts
+//   ⑦ Verify Payment         verifyShurjoPayPayment() POST {API}/api/verification
+//                            (called via lib/payment-verify.ts)
+//   ⑧ Redirect Customer to our page      callback/route.ts → /payment/success|failed|processing
+//
+//   ShurjoPay has no IPN (server-to-server notice) — if ⑥ never arrives, the
+//   safety nets below (processing page, reconciler, hourly sweep) run ⑦ instead.
+//   (SSLCommerz uses the same style: lib/payment/sslcommerz/README.md)
+//
 //   Starting a payment (checkout, app/actions/payment.ts):
 //     getShurjoPayToken → createShurjoPayPayment
 //
@@ -129,9 +145,10 @@ export const SP_CODE = {
 
 // ═══ Starting a payment (checkout) ══════════════════
 
-// ─── Get Token ──────────────────────────────────────
+// ─── ①② Get Token ───────────────────────────────────
 // Returns ShurjoPay's reply as-is, even when it has no token (see top).
 export async function getShurjoPayToken(): Promise<ShurjoPayTokenResponse> {
+  // ① Request Token
   const { data } = await axios.post(
     `${BASE_URL}/api/get_token`,
     {
@@ -151,10 +168,11 @@ export async function getShurjoPayToken(): Promise<ShurjoPayTokenResponse> {
     message: data.message,
   });
 
+  // ② Return Token (data.token is empty when ShurjoPay refused the login)
   return data as ShurjoPayTokenResponse;
 }
 
-// ─── Create Payment ─────────────────────────────────
+// ─── ③④ Create Payment ──────────────────────────────
 export async function createShurjoPayPayment({
   token,
   storeId,
@@ -182,6 +200,7 @@ export async function createShurjoPayPayment({
     prefix: SHURJOPAY_PREFIX || "RRN",
     token,
     store_id: storeId,
+    // ⑥ where ShurjoPay sends the customer back to (paid or cancelled):
     return_url: CALLBACK_URL,
     cancel_url: CALLBACK_URL,
     amount: amount,
@@ -208,6 +227,7 @@ export async function createShurjoPayPayment({
     customerPhone,
   });
 
+  // ③ Create Payment
   const { data } = await axios.post(`${BASE_URL}/api/secret-pay`, payload, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -221,12 +241,13 @@ export async function createShurjoPayPayment({
     message: data.message,
   });
 
+  // ④ Return checkout_url (+ sp_order_id) — the checkout page does ⑤ with it
   return data as ShurjoPayPaymentResponse;
 }
 
-// ═══ Checking a payment (callback / reconciler / sweep) ═══
+// ═══ ⑦ Checking a payment (callback / reconciler / sweep) ═══
 
-// Throws when ShurjoPay gives no token (see top).
+// ① ② again, for verification. Throws when ShurjoPay gives no token (see top).
 async function getVerificationToken(): Promise<ShurjoPayTokenResponse> {
   console.log("🔑 Token request to:", `${BASE_URL}/api/get_token`);
   console.log("🔑 Environment:", process.env.NODE_ENV);
@@ -273,7 +294,7 @@ async function getVerificationToken(): Promise<ShurjoPayTokenResponse> {
   }
 }
 
-// ─── Verify Payment ─────────────────────────────────
+// ─── ⑦ Verify Payment ───────────────────────────────
 export async function verifyShurjoPayPayment(
   spOrderId: string,
 ): Promise<ShurjoPayVerificationItem[]> {
@@ -282,6 +303,7 @@ export async function verifyShurjoPayPayment(
   const tokenData = await getVerificationToken();
 
   try {
+    // ⑦ Verify Payment — ask ShurjoPay what really happened to this sp_order_id
     const { data } = await axios.post(
       `${BASE_URL}/api/verification`,
       { order_id: spOrderId },

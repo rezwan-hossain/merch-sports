@@ -33,6 +33,17 @@ export type CouponRow = {
   revenue: number;
 };
 
+/** One payment gateway's share of paid orders (admin → Analytics). */
+export type GatewayRow = {
+  label: string; // "ShurjoPay", "SSLCommerz", "Manual (admin)"
+  paidOrders: number;
+  revenue: number;
+  /** Online attempts that reached this gateway and finished (paid or failed). */
+  attempts: number;
+  /** Paid ÷ attempts. null = not applicable (manual) or too few attempts to mean much. */
+  successRate: number | null;
+};
+
 export type AnalyticsData = {
   generatedAt: string;
   bucket: "day" | "week";
@@ -50,6 +61,7 @@ export type AnalyticsData = {
   series: DailyPoint[];
   packages: PackageRow[];
   coupons: CouponRow[];
+  gateways: GatewayRow[];
   breakdowns: {
     tshirt: CountItem[];
     gender: CountItem[];

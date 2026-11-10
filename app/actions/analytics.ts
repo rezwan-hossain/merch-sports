@@ -14,10 +14,41 @@ import type {
   CountItem,
   CouponRow,
   DailyPoint,
+  GatewayRow,
   PackageRow,
 } from "@/types/analytics";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// ─── Payment gateways & methods (for the "Payments" cards) ──
+// Not exported: every export of a "use server" file is a public endpoint.
+
+const GATEWAY_LABELS: Record<string, string> = {
+  shurjopay: "ShurjoPay",
+  sslcommerz: "SSLCommerz",
+};
+const gatewayLabel = (gateway: string | null | undefined) =>
+  (gateway && GATEWAY_LABELS[gateway]) || "Unknown";
+
+/** Display order for the grouped methods (anything else sorts after). */
+const METHOD_GROUPS = ["bKash", "Nagad", "Rocket", "Card", "Net banking", "Other wallet", "Manual (admin)", "Not recorded"];
+
+/**
+ * Group a gateway's raw method name. ShurjoPay sends e.g. "bKash",
+ * "South East Visa", "IBBL iBanking"; SSLCommerz sends e.g. "BKASH-BKash",
+ * "VISA-Dutch Bangla", "DBBLMOBILEB-Dbbl Mobile Banking" (= Rocket).
+ */
+function paymentMethodGroup(raw: string | null | undefined): string {
+  const m = (raw ?? "").toLowerCase();
+  if (!m || m === "shurjopay" || m === "sslcommerz") return "Not recorded";
+  if (m.includes("bkash")) return "bKash";
+  if (m.includes("nagad")) return "Nagad";
+  if (m.includes("rocket") || m.includes("dbblmobile")) return "Rocket";
+  if (/visa|master|amex|american express|unionpay|diners|card/.test(m)) return "Card";
+  // SSLCommerz names internet banking "<BANK>IB-…" (CITYTOUCHIB-, IBBLIB-…)
+  if (/ibank|i-bank|internet bank|net bank|^[a-z]+ib-/.test(m)) return "Net banking";
+  return "Other wallet"; // NexusPay, OK Wallet, Pathao Pay, TAP, upay…
+}
 const HOLD_GRACE_MS = 60 * 60 * 1000; // unpaid orders younger than this are still in checkout
 const ORDER_CAP = 50_000;
 
@@ -87,7 +118,7 @@ export async function getAnalytics(
           createdAt: true,
           couponId: true,
           payment: {
-            select: { status: true, amount: true, paymentMethod: true },
+            select: { status: true, amount: true, paymentMethod: true, paymentGateway: true },
           },
           registration: {
             select: {
@@ -289,7 +320,49 @@ export async function getAnalytics(
       return AGE_BANDS[5];
     };
 
-    const methodCounts = tally(paid.map((o) => o.payment?.paymentMethod));
+    // How runners paid, grouped (gateways report methods in different formats:
+    // "South East Visa", "BKASH-BKash", "IBBL iBanking"…).
+    const methodCounts = tally(
+      paid.map((o) => (o.source === "MANUAL" ? "Manual (admin)" : paymentMethodGroup(o.payment?.paymentMethod))),
+      METHOD_GROUPS,
+    );
+
+    // Which gateway they paid through, and how often attempts there succeed.
+    const gatewayRows = new Map<string, GatewayRow>();
+    const rowFor = (label: string) => {
+      let row = gatewayRows.get(label);
+      if (!row) {
+        row = { label, paidOrders: 0, revenue: 0, attempts: 0, successRate: null };
+        gatewayRows.set(label, row);
+      }
+      return row;
+    };
+    for (const o of orders) {
+      const p = o.payment;
+      if (!p) continue;
+      const label = o.source === "MANUAL" ? "Manual (admin)" : gatewayLabel(p.paymentGateway);
+      if (p.status === "PAID") {
+        const row = rowFor(label);
+        row.paidOrders += 1;
+        row.revenue += p.amount;
+      }
+      // Online attempts that reached a gateway and ended (paid or failed).
+      if (o.source === "ONLINE" && p.paymentGateway && (p.status === "PAID" || p.status === "FAILED")) {
+        rowFor(label).attempts += 1;
+      }
+    }
+    // A success rate from a handful of attempts is noise — show it from 10 on.
+    const MIN_ATTEMPTS_FOR_RATE = 10;
+    const gateways: GatewayRow[] = [...gatewayRows.values()]
+      .filter((r) => r.paidOrders > 0 || r.attempts > 0)
+      .map((r) => ({
+        ...r,
+        successRate:
+          r.label === "Manual (admin)" || r.attempts < MIN_ATTEMPTS_FOR_RATE
+            ? null
+            : r.paidOrders / r.attempts,
+      }))
+      .sort((a, b) => b.paidOrders - a.paidOrders);
 
     return {
       data: {
@@ -299,6 +372,7 @@ export async function getAnalytics(
         series,
         packages: packageRows,
         coupons,
+        gateways,
         breakdowns: {
           tshirt: tally(
             regs.map((r) => r.tshirtSize),

@@ -6,6 +6,7 @@ import { getAnalytics } from "@/app/actions/analytics";
 import { AdminReturningRunnersPanel } from "./AdminReturningRunnersPanel";
 import { PaceCard } from "./analytics/PaceCard";
 import { TrafficCard } from "./analytics/TrafficCard";
+import { GatewayCard } from "./analytics/GatewayCard";
 import type { AnalyticsData, AnalyticsRange } from "@/types/analytics";
 import { RefreshCw } from "lucide-react";
 import {
@@ -219,8 +220,9 @@ export function AdminDashboardPanel({ events }: Props) {
           </div>
 
           {/* Money */}
+          <GatewayCard rows={data.gateways} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card title="Payment methods" subtitle="Paid orders">
+            <Card title="How they paid" subtitle="Paid orders · grouped by method">
               <BarList items={data.breakdowns.paymentMethods} empty="No paid orders yet" />
             </Card>
             <Card title="Registration source" subtitle="Paid runners">

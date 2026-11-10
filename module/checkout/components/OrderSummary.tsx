@@ -4,7 +4,9 @@
 import { CheckoutItem, AppliedCoupon } from "@/types/checkout";
 import { CouponInput } from "./CouponInput";
 import Link from "next/link";
-import { Loader2, Check, CreditCard } from "lucide-react";
+import { useState } from "react";
+import { Check, Loader2 } from "lucide-react";
+import { PaymentMethodSelector, paymentMethodName } from "./PaymentMethodSelector";
 
 interface OrderSummaryProps {
   item: CheckoutItem;
@@ -22,36 +24,6 @@ interface OrderSummaryProps {
   sslcommerzEnabled: boolean;
 }
 
-type PaymentMethodOption = {
-  id: string;
-  label: string;
-  /** Logo in /public; a card icon is shown when there isn't one. */
-  image: string | null;
-  description: string;
-};
-
-const paymentMethods: PaymentMethodOption[] = [
-  {
-    id: "shurjopay",
-    label: "SurjoPay",
-    image: "/icons/shurjopay.png",
-    description:
-      "Pay securely via ShurjoPay. Supports bKash, Nagad, Rocket, Visa, Mastercard, and more. You will be redirected to complete your payment.",
-  },
-  {
-    id: "sslcommerz",
-    label: "SSLCommerz",
-    image: "/icons/sslcommerz.png",
-    description:
-      "Pay securely via SSLCommerz. Supports bKash, Nagad, Rocket, Visa, Mastercard, AMEX, and internet banking. You will be redirected to complete your payment.",
-  },
-];
-
-const GATEWAY_LABEL: Record<string, string> = {
-  shurjopay: "ShurjoPay",
-  sslcommerz: "SSLCommerz",
-};
-
 export const OrderSummary = ({
   item,
   paymentMethod,
@@ -65,14 +37,15 @@ export const OrderSummary = ({
   finalPrice,
   sslcommerzEnabled,
 }: OrderSummaryProps) => {
-  const availableMethods = paymentMethods.filter(
-    (m) => m.id !== "sslcommerz" || sslcommerzEnabled,
-  );
+
   const subtotal = item.price * item.qty;
   const discount = appliedCoupon?.discountAmount || 0;
   const hasDiscount = discount > 0;
 
-  const isButtonDisabled = loading || !isFormValid;
+  // Privacy consent — ticked by default; unticking blocks payment.
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(true);
+
+  const isButtonDisabled = loading || !isFormValid || !agreedToPrivacy;
 
   return (
     <div className="rounded-lg border border-gray-200 p-4 sm:p-6 md:p-8 bg-white">
@@ -147,92 +120,46 @@ export const OrderSummary = ({
       </div>
 
       {/* Payment Methods */}
-      <div className="mb-6 sm:mb-8">
-        <h3 className="text-xs sm:text-sm font-semibold text-foreground mb-2 sm:mb-3 mt-2 sm:mt-3">
-          Payment Method
-        </h3>
-        <div className="space-y-2 sm:space-y-3">
-          {availableMethods.map((method) => {
-            const isSelected = paymentMethod === method.id;
+      <PaymentMethodSelector
+        value={paymentMethod}
+        onChange={onPaymentMethodChange}
+        sslcommerzEnabled={sslcommerzEnabled}
+      />
 
-            return (
-              <button
-                key={method.id}
-                type="button"
-                onClick={() => onPaymentMethodChange(method.id)}
-                className={`w-full text-left rounded-lg sm:rounded-xl border-2 transition-all duration-200 ${
-                  isSelected
-                    ? "border-neon-lime bg-neon-lime/5 shadow-sm shadow-neon-lime/20"
-                    : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                }`}
-              >
-                {/* Main row: radio indicator + image + label */}
-                <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3.5">
-                  {/* Custom radio indicator */}
-                  <div
-                    className={`flex h-4 w-4 sm:h-5 sm:w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 ${
-                      isSelected
-                        ? "border-neon-lime bg-neon-lime"
-                        : "border-gray-300 bg-white"
-                    }`}
-                  >
-                    {isSelected && (
-                      <Check
-                        className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-black"
-                        strokeWidth={3}
-                      />
-                    )}
-                  </div>
-
-                  {/* Payment logo */}
-                  <div className="flex h-8 w-12 sm:h-10 sm:w-14 shrink-0 items-center justify-center rounded-md bg-gray-50 p-1">
-                    {method.image ? (
-                      <img
-                        src={method.image}
-                        alt={method.label}
-                        className="h-full w-full object-contain"
-                      />
-                    ) : (
-                      <CreditCard className="h-5 w-5 text-gray-500" aria-hidden />
-                    )}
-                  </div>
-
-                  {/* Label */}
-                  <span
-                    className={`text-xs sm:text-sm font-medium ${
-                      isSelected ? "text-foreground" : "text-muted-foreground"
-                    }`}
-                  >
-                    {method.label}
-                  </span>
-                </div>
-
-                {/* Expandable description */}
-                {isSelected && method.description && (
-                  <div className="px-2.5 sm:px-3.5 pb-2.5 sm:pb-3.5 pt-0">
-                    <div className="rounded-lg bg-gray-100 px-3 sm:px-4 py-2 sm:py-3 text-xs leading-relaxed text-gray-500">
-                      {method.description}
-                    </div>
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Privacy Notice */}
-      <p className="mb-6 sm:mb-8 text-xs leading-relaxed text-muted-foreground">
-        Your personal data will be used to process your order. By clicking below
-        you agree to our{" "}
-        <Link
-          href="/privacy-policy"
-          className="underline text-foreground hover:text-primary"
+      {/* Privacy consent (ticked by default) */}
+      <label className="mb-6 sm:mb-8 flex cursor-pointer items-start gap-2.5 rounded-lg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-neon-lime/50 has-[:focus-visible]:ring-offset-2">
+        <input
+          type="checkbox"
+          checked={agreedToPrivacy}
+          onChange={(e) => setAgreedToPrivacy(e.target.checked)}
+          className="sr-only"
+        />
+        <span
+          aria-hidden
+          className={`mt-px flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-colors ${
+            agreedToPrivacy ? "border-neon-lime bg-neon-lime" : "border-gray-300 bg-white"
+          }`}
         >
-          privacy policy
-        </Link>
-        .
-      </p>
+          {agreedToPrivacy && <Check className="h-3 w-3 text-black" strokeWidth={3} />}
+        </span>
+        <span className="text-xs leading-relaxed text-muted-foreground">
+          Your personal data will be used to process your order. I agree to the{" "}
+          <Link
+            href="/privacy-policy"
+            className="underline text-foreground hover:text-primary"
+          >
+            privacy policy
+          </Link>
+          .
+        </span>
+      </label>
+
+      {/* Consent hint when unticked */}
+      {!agreedToPrivacy && (
+        <p className="mb-3 text-xs text-amber-600 text-center">
+          Please agree to the privacy policy to continue
+        </p>
+      )}
 
       {/* Validation hint when form is invalid */}
       {!isFormValid && (
@@ -256,8 +183,8 @@ export const OrderSummary = ({
             <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
             <span className="text-xs sm:text-base">Processing...</span>
           </>
-        ) : GATEWAY_LABEL[paymentMethod] ? (
-          `Pay ৳${finalPrice.toLocaleString()} with ${GATEWAY_LABEL[paymentMethod]}`
+        ) : paymentMethodName(paymentMethod) ? (
+          `Pay ৳${finalPrice.toLocaleString()} with ${paymentMethodName(paymentMethod)}`
         ) : (
           `Place Order – ৳${finalPrice.toLocaleString()}`
         )}

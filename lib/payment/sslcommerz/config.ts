@@ -11,11 +11,26 @@
 /** The value stored in Payment.paymentGateway / paymentMethod for this gateway. */
 export const SSLCOMMERZ = "sslcommerz";
 
+/**
+ * Only the domain is used, e.g. "https://securepay.sslcommerz.com" — the code
+ * adds the paths itself (/gwprocess/v4/api.php, /validator/api/…). So a full
+ * endpoint pasted from SSLCommerz's docs works too:
+ *   "https://securepay.sslcommerz.com/gwprocess/v4/api.php" → "https://securepay.sslcommerz.com"
+ */
+function apiDomain(value: string | undefined): string {
+  const raw = value?.trim() || "https://sandbox.sslcommerz.com";
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return raw.replace(/\/$/, "");
+  }
+}
+
 export function getSslCommerzConfig() {
   return {
     storeId: process.env.SSLCOMMERZ_STORE_ID ?? "",
     storePassword: process.env.SSLCOMMERZ_STORE_PASSWORD ?? "",
-    apiUrl: (process.env.SSLCOMMERZ_API_URL || "https://sandbox.sslcommerz.com").replace(/\/$/, ""),
+    apiUrl: apiDomain(process.env.SSLCOMMERZ_API_URL),
   };
 }
 

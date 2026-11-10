@@ -213,7 +213,17 @@ if (env.SSLCOMMERZ_ENABLED !== "true") {
   console.log('  (switched off — set SSLCOMMERZ_ENABLED="true" to offer it at checkout)');
 }
 if (env.SSLCOMMERZ_STORE_ID || env.SSLCOMMERZ_ENABLED === "true") {
-  const api = (env.SSLCOMMERZ_API_URL || "https://sandbox.sslcommerz.com").replace(/\/$/, "");
+  // Only the domain is used (same as lib/payment/sslcommerz/config.ts).
+  const rawApi = (env.SSLCOMMERZ_API_URL || "https://sandbox.sslcommerz.com").trim();
+  let api;
+  try {
+    api = new URL(rawApi).origin;
+  } catch {
+    api = rawApi.replace(/\/$/, "");
+  }
+  if (api !== rawApi.replace(/\/$/, "")) {
+    warn(`SSLCOMMERZ_API_URL has a path — only the domain is used: ${api}`, `Set it to just ${api}`);
+  }
   const live = !/sandbox/i.test(api);
   console.log(`  url: ${api} (${live ? "LIVE" : "sandbox"})`);
   if (!env.SSLCOMMERZ_STORE_ID || !env.SSLCOMMERZ_STORE_PASSWORD) {

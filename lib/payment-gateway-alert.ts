@@ -21,7 +21,9 @@ export type GatewayStage =
   | "unreachable" // network / timeout / HTTP error
   | "config"; // our own setup would make payments unconfirmable
 
-export type Contact = "ShurjoPay support" | "Developer";
+export type GatewayName = "ShurjoPay" | "SSLCommerz";
+
+export type Contact = "ShurjoPay support" | "SSLCommerz support" | "Developer";
 
 export type GatewayAdvice = {
   meaning: string;
@@ -51,10 +53,42 @@ const STAGE_LABEL: Record<GatewayStage, string> = {
   config: "Payment setup problem",
 };
 
+const SSLCOMMERZ_STAGE_LABEL: Record<GatewayStage, string> = {
+  login: "SSLCommerz refused the store login",
+  create_payment: "SSLCommerz didn't return a payment page",
+  unreachable: "Can't reach SSLCommerz",
+  config: "SSLCommerz setup problem",
+};
+
+function explainSslCommerzFailure(stage: GatewayStage): GatewayAdvice {
+  switch (stage) {
+    case "unreachable":
+      return {
+        meaning: "The server couldn't connect to SSLCommerz (network, DNS, firewall, or SSLCommerz is down)",
+        contact: "Developer",
+        fix: "Run npm run check:services on the server. If the server's internet is fine, SSLCommerz may be down — ask SSLCommerz support.",
+      };
+    case "config":
+      return {
+        meaning: "The SSLCommerz settings on the server would make payments impossible to confirm",
+        contact: "Developer",
+        fix: "Fix the SSLCOMMERZ_* settings in the server .env (see the message), then restart the app.",
+      };
+    default:
+      return {
+        meaning: "SSLCommerz refused to start the payment",
+        contact: "SSLCommerz support",
+        fix: "Check SSLCOMMERZ_STORE_ID / SSLCOMMERZ_STORE_PASSWORD (quoted) with npm run check:services. If they're right, send SSLCommerz the message above.",
+      };
+  }
+}
+
 export function explainGatewayFailure(
   stage: GatewayStage,
   spCode: number | null,
+  gateway: GatewayName = "ShurjoPay",
 ): GatewayAdvice {
+  if (gateway === "SSLCommerz") return explainSslCommerzFailure(stage);
   if (spCode !== null && SP_CODE_ADVICE[spCode]) return SP_CODE_ADVICE[spCode];
   switch (stage) {
     case "unreachable":
@@ -88,14 +122,18 @@ export async function reportGatewayFailure(args: {
   message?: string | null;
   orderId: string;
   eventId?: string | null;
+  /** Omit for ShurjoPay. */
+  gateway?: GatewayName;
 }): Promise<void> {
   try {
+    const gateway = args.gateway ?? "ShurjoPay";
     const code = Number(args.spCode);
     const spCode = Number.isFinite(code) && args.spCode !== "" && args.spCode != null ? code : null;
     const message = (args.message ?? "").trim().slice(0, 120) || null;
-    const advice = explainGatewayFailure(args.stage, spCode);
+    const advice = explainGatewayFailure(args.stage, spCode, gateway);
 
-    const head = `${STAGE_LABEL[args.stage]}${spCode !== null ? ` · sp_code ${spCode}` : ""}`;
+    const label = gateway === "SSLCommerz" ? SSLCOMMERZ_STAGE_LABEL : STAGE_LABEL;
+    const head = `${label[args.stage]}${spCode !== null ? ` · sp_code ${spCode}` : ""}`;
 
     const recent = await prisma.auditLog.findFirst({
       where: {
@@ -108,7 +146,7 @@ export async function reportGatewayFailure(args: {
     if (recent) return;
 
     await audit({
-      actor: SYSTEM.shurjopay,
+      actor: gateway === "SSLCommerz" ? { id: null, label: "System · SSLCommerz" } : SYSTEM.shurjopay,
       action: GATEWAY_ERROR_ACTION,
       entityType: "payment",
       entityId: args.orderId,
@@ -118,6 +156,7 @@ export async function reportGatewayFailure(args: {
         stage: [null, args.stage],
         sp_code: [null, spCode],
         contact: [null, advice.contact],
+        gateway: [null, gateway],
       },
     });
   } catch {
@@ -127,6 +166,7 @@ export async function reportGatewayFailure(args: {
 
 export type GatewayAlert = {
   at: string;
+  gateway: GatewayName;
   stage: GatewayStage;
   spCode: number | null;
   summary: string;
@@ -147,22 +187,30 @@ export async function getActiveGatewayAlert(): Promise<GatewayAlert | null> {
   });
   if (!latest) return null;
 
-  // A payment session started after the failure → gateway works again.
+  const ch = (latest.changes ?? {}) as Record<string, [unknown, unknown]>;
+  // Entries from before SSLCommerz existed have no gateway → ShurjoPay.
+  const gateway: GatewayName = ch.gateway?.[1] === "SSLCommerz" ? "SSLCommerz" : "ShurjoPay";
+
+  // A session on the same gateway started after the failure → it works again.
   const recovered = await prisma.payment.findFirst({
-    where: { paymentId: { not: null }, updatedAt: { gt: latest.createdAt } },
+    where: {
+      paymentId: { not: null },
+      paymentGateway: gateway === "SSLCommerz" ? "sslcommerz" : "shurjopay",
+      updatedAt: { gt: latest.createdAt },
+    },
     select: { id: true },
   });
   if (recovered) return null;
 
-  const ch = (latest.changes ?? {}) as Record<string, [unknown, unknown]>;
   const stage = (ch.stage?.[1] as GatewayStage) ?? "login";
   const spCode = typeof ch.sp_code?.[1] === "number" ? (ch.sp_code[1] as number) : null;
 
   return {
     at: latest.createdAt.toISOString(),
+    gateway,
     stage,
     spCode,
     summary: latest.summary,
-    ...explainGatewayFailure(stage, spCode),
+    ...explainGatewayFailure(stage, spCode, gateway),
   };
 }

@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { initiateShurjoPayPayment } from "@/app/actions/payment";
+import { initiateSslCommerzPayment } from "@/app/actions/payment-sslcommerz";
 
 type RetryPaymentClientProps = {
   orderId: string;
@@ -13,6 +14,7 @@ type RetryPaymentClientProps = {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  gateway: "shurjopay" | "sslcommerz";
 };
 
 const RetryPaymentClient = ({
@@ -24,7 +26,9 @@ const RetryPaymentClient = ({
   customerName,
   customerEmail,
   customerPhone,
+  gateway,
 }: RetryPaymentClientProps) => {
+  const gatewayName = gateway === "sslcommerz" ? "SSLCommerz" : "ShurjoPay";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -41,7 +45,10 @@ const RetryPaymentClient = ({
       }),
     );
 
-    const result = await initiateShurjoPayPayment(safeArgs);
+    const result =
+      gateway === "sslcommerz"
+        ? await initiateSslCommerzPayment(safeArgs)
+        : await initiateShurjoPayPayment(safeArgs);
 
     if (result.error) {
       setError(result.error);
@@ -88,8 +95,8 @@ const RetryPaymentClient = ({
           className="w-full py-3 bg-neutral-900 text-white rounded-full font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading
-            ? "Redirecting to ShurjoPay..."
-            : `Pay ৳${amount} with ShurjoPay`}
+            ? `Redirecting to ${gatewayName}...`
+            : `Pay ৳${amount} with ${gatewayName}`}
         </button>
       </div>
     </div>

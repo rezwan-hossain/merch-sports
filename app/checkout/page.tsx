@@ -5,6 +5,7 @@ import CheckoutPage from "@/module/checkout/pages/CheckoutPage";
 import { redirect } from "next/navigation";
 import { getCheckoutData } from "../actions/checkout";
 import { InitiateCheckoutTracker } from "@/components/tracking/InitiateCheckoutTracker";
+import { isSslCommerzEnabled } from "@/lib/payment/sslcommerz/config";
 
 type SearchParams = Promise<{
   package?: string;
@@ -63,6 +64,7 @@ async function CheckoutContent({
         userEmail={user?.email ?? ""}
         userName={user?.user_metadata?.full_name ?? ""}
         eventType={pkg.event.eventType}
+        sslcommerzEnabled={isSslCommerzEnabled()}
       />
     </>
   );

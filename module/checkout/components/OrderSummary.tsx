@@ -4,7 +4,7 @@
 import { CheckoutItem, AppliedCoupon } from "@/types/checkout";
 import { CouponInput } from "./CouponInput";
 import Link from "next/link";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, CreditCard } from "lucide-react";
 
 interface OrderSummaryProps {
   item: CheckoutItem;
@@ -19,9 +19,18 @@ interface OrderSummaryProps {
   onApplyCoupon: (coupon: AppliedCoupon, finalPrice: number) => void;
   onRemoveCoupon: () => void;
   finalPrice: number;
+  sslcommerzEnabled: boolean;
 }
 
-const paymentMethods = [
+type PaymentMethodOption = {
+  id: string;
+  label: string;
+  /** Logo in /public; a card icon is shown when there isn't one. */
+  image: string | null;
+  description: string;
+};
+
+const paymentMethods: PaymentMethodOption[] = [
   {
     id: "shurjopay",
     label: "SurjoPay",
@@ -29,7 +38,19 @@ const paymentMethods = [
     description:
       "Pay securely via ShurjoPay. Supports bKash, Nagad, Rocket, Visa, Mastercard, and more. You will be redirected to complete your payment.",
   },
+  {
+    id: "sslcommerz",
+    label: "SSLCommerz",
+    image: "/icons/sslcommerz.png",
+    description:
+      "Pay securely via SSLCommerz. Supports bKash, Nagad, Rocket, Visa, Mastercard, AMEX, and internet banking. You will be redirected to complete your payment.",
+  },
 ];
+
+const GATEWAY_LABEL: Record<string, string> = {
+  shurjopay: "ShurjoPay",
+  sslcommerz: "SSLCommerz",
+};
 
 export const OrderSummary = ({
   item,
@@ -42,7 +63,11 @@ export const OrderSummary = ({
   onApplyCoupon,
   onRemoveCoupon,
   finalPrice,
+  sslcommerzEnabled,
 }: OrderSummaryProps) => {
+  const availableMethods = paymentMethods.filter(
+    (m) => m.id !== "sslcommerz" || sslcommerzEnabled,
+  );
   const subtotal = item.price * item.qty;
   const discount = appliedCoupon?.discountAmount || 0;
   const hasDiscount = discount > 0;
@@ -127,7 +152,7 @@ export const OrderSummary = ({
           Payment Method
         </h3>
         <div className="space-y-2 sm:space-y-3">
-          {paymentMethods.map((method) => {
+          {availableMethods.map((method) => {
             const isSelected = paymentMethod === method.id;
 
             return (
@@ -161,11 +186,15 @@ export const OrderSummary = ({
 
                   {/* Payment logo */}
                   <div className="flex h-8 w-12 sm:h-10 sm:w-14 shrink-0 items-center justify-center rounded-md bg-gray-50 p-1">
-                    <img
-                      src={method.image}
-                      alt={method.label}
-                      className="h-full w-full object-contain"
-                    />
+                    {method.image ? (
+                      <img
+                        src={method.image}
+                        alt={method.label}
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <CreditCard className="h-5 w-5 text-gray-500" aria-hidden />
+                    )}
                   </div>
 
                   {/* Label */}
@@ -227,8 +256,8 @@ export const OrderSummary = ({
             <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
             <span className="text-xs sm:text-base">Processing...</span>
           </>
-        ) : paymentMethod === "shurjopay" ? (
-          `Pay ৳${finalPrice.toLocaleString()} with ShurjoPay`
+        ) : GATEWAY_LABEL[paymentMethod] ? (
+          `Pay ৳${finalPrice.toLocaleString()} with ${GATEWAY_LABEL[paymentMethod]}`
         ) : (
           `Place Order – ৳${finalPrice.toLocaleString()}`
         )}

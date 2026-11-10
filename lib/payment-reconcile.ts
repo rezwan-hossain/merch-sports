@@ -17,6 +17,8 @@ import { verifyPayment } from "@/lib/payment-verify";
 import { confirmPaidOrder } from "@/lib/slot-hold";
 import { runPostPaymentSteps } from "@/lib/order-confirmation";
 import { audit, SYSTEM, type AuditActor } from "@/lib/audit";
+import { SSLCOMMERZ } from "@/lib/payment/sslcommerz/config";
+import { confirmSslCommerzPayment } from "@/lib/payment/sslcommerz/confirm-payment";
 
 export type ReconcileResult =
   | "CONFIRMED" // was paid; now confirmed and runner notified
@@ -44,12 +46,24 @@ export async function reconcileOrder(
       id: true,
       status: true,
       eventId: true,
-      payment: { select: { id: true, status: true, amount: true, paymentId: true } },
+      payment: {
+        select: { id: true, status: true, amount: true, paymentId: true, paymentGateway: true },
+      },
     },
   });
   const payment = order?.payment;
   if (!order || !payment?.paymentId) return "NO_SESSION";
   if (payment.status === "PAID" && order.status === "CONFIRMED") return "ALREADY_PAID";
+
+  // SSLCommerz sessions are checked with SSLCommerz. Everything else (including
+  // every payment made before SSLCommerz existed) goes the ShurjoPay way below.
+  if (payment.paymentGateway === SSLCOMMERZ) {
+    const { result } = await confirmSslCommerzPayment(payment.paymentId, {
+      log: opts.log,
+      ...(opts.actor && { actor: opts.actor }),
+    });
+    return result;
+  }
 
   const spOrderId = payment.paymentId;
   const result = await verifyPayment(spOrderId, { attempts: 1, timeoutMs: 15_000 });

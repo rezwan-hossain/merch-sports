@@ -10,12 +10,15 @@ import { BillingFormData, CheckoutItem, AppliedCoupon } from "@/types/checkout";
 import { useRouter } from "next/navigation";
 import { placeOrder } from "@/app/actions/checkout";
 import { initiateShurjoPayPayment } from "@/app/actions/payment";
+import { initiateSslCommerzPayment } from "@/app/actions/payment-sslcommerz";
 
 type CheckoutPageProps = {
   item: CheckoutItem;
   userEmail: string;
   userName: string;
   eventType: string;
+  /** SSLCommerz is offered only when the server has it switched on. */
+  sslcommerzEnabled: boolean;
 };
 
 // Bangladeshi phone number regex for validation
@@ -27,6 +30,7 @@ const CheckoutPage = ({
   userEmail,
   userName,
   eventType,
+  sslcommerzEnabled,
 }: CheckoutPageProps) => {
   const router = useRouter();
   const billingFormRef = useRef<BillingFormRef>(null);
@@ -211,8 +215,8 @@ const CheckoutPage = ({
         orderIdRef.current = orderId;
       }
 
-      // ✅ Step 2: If ShurjoPay → initiate payment & redirect
-      if (paymentMethod === "shurjopay") {
+      // ✅ Step 2: Online gateway → initiate payment & redirect
+      if (paymentMethod === "shurjopay" || paymentMethod === "sslcommerz") {
         const paymentArgs = JSON.parse(
           JSON.stringify({
             orderId,
@@ -222,7 +226,10 @@ const CheckoutPage = ({
           }),
         );
 
-        const paymentResult = await initiateShurjoPayPayment(paymentArgs);
+        const paymentResult =
+          paymentMethod === "sslcommerz"
+            ? await initiateSslCommerzPayment(paymentArgs)
+            : await initiateShurjoPayPayment(paymentArgs);
 
         console.log("💳 ShurjoPay initiation result:", paymentResult);
 
@@ -234,7 +241,8 @@ const CheckoutPage = ({
         }
 
         if (paymentResult.checkoutUrl) {
-          // ✅ Redirect to ShurjoPay checkout page
+          // Send the runner to the gateway's payment page
+          // (for SSLCommerz this is step ③ — see lib/payment/sslcommerz/README.md)
           window.location.href = paymentResult.checkoutUrl;
           return;
         }
@@ -288,6 +296,7 @@ const CheckoutPage = ({
               item={item}
               paymentMethod={paymentMethod}
               onPaymentMethodChange={setPaymentMethod}
+              sslcommerzEnabled={sslcommerzEnabled}
               onPlaceOrder={handlePlaceOrder}
               loading={loading}
               isFormValid={isFormValid}

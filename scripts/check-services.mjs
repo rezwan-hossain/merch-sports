@@ -206,6 +206,50 @@ if (env.SHURJOPAY_CALLBACK_URL) {
   }
 }
 
+// ─── 3b. SSLCommerz ────────────────────────────────────────
+section("SSLCommerz (payment)");
+
+if (env.SSLCOMMERZ_ENABLED !== "true") {
+  console.log('  (switched off — set SSLCOMMERZ_ENABLED="true" to offer it at checkout)');
+}
+if (env.SSLCOMMERZ_STORE_ID || env.SSLCOMMERZ_ENABLED === "true") {
+  const api = (env.SSLCOMMERZ_API_URL || "https://sandbox.sslcommerz.com").replace(/\/$/, "");
+  const live = !/sandbox/i.test(api);
+  console.log(`  url: ${api} (${live ? "LIVE" : "sandbox"})`);
+  if (!env.SSLCOMMERZ_STORE_ID || !env.SSLCOMMERZ_STORE_PASSWORD) {
+    bad("SSLCOMMERZ_STORE_ID / SSLCOMMERZ_STORE_PASSWORD missing");
+  } else {
+    // Read-only: looking up a made-up tran_id proves the store login works.
+    try {
+      const { data, text } = await fetchJson(
+        `${api}/validator/api/merchantTransIDvalidationAPI.php?tran_id=HEALTHCHECK` +
+          `&store_id=${encodeURIComponent(env.SSLCOMMERZ_STORE_ID)}` +
+          `&store_passwd=${encodeURIComponent(env.SSLCOMMERZ_STORE_PASSWORD)}&format=json`,
+      );
+      if (data?.APIConnect === "DONE") ok("Store login works");
+      else
+        bad(
+          `SSLCommerz refused the store login: APIConnect ${data?.APIConnect ?? text ?? "?"}`,
+          data?.APIConnect === "INACTIVE"
+            ? "The store is inactive — contact SSLCommerz support."
+            : "Check SSLCOMMERZ_STORE_ID / SSLCOMMERZ_STORE_PASSWORD (quoted?) and that the url matches the store (sandbox vs live).",
+        );
+    } catch (err) {
+      bad(`Can't reach SSLCommerz: ${err.message}`, "Network/DNS/firewall problem on this server.");
+    }
+  }
+  try {
+    const site = new URL(env.NEXT_PUBLIC_SITE_URL || "");
+    if (live && (site.protocol !== "https:" || /localhost|127\.0\.0\.1/.test(site.hostname))) {
+      bad(`Live SSLCommerz but NEXT_PUBLIC_SITE_URL is ${site.origin}`, "Payments would never be confirmed — set your public https domain.");
+    } else {
+      ok(`Customers return to ${site.origin}/api/payment/sslcommerz/…`);
+    }
+  } catch {
+    bad("NEXT_PUBLIC_SITE_URL is not a valid URL (SSLCommerz needs it)");
+  }
+}
+
 // ─── 4. SMS ────────────────────────────────────────────────
 section("SMS gateway");
 

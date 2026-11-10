@@ -19,6 +19,25 @@ import { claimSlots, confirmPaidOrder, releaseHold } from "@/lib/slot-hold";
 import { runPostPaymentSteps } from "@/lib/order-confirmation";
 import { revalidateTag } from "next/cache";
 import { getActiveGatewayAlert, type GatewayAlert } from "@/lib/payment-gateway-alert";
+import { SSLCOMMERZ } from "@/lib/payment/sslcommerz/config";
+import { getTransaction, type TransactionCheck } from "@/lib/payment/sslcommerz/api";
+
+// SSLCommerz's answer in the shape the admin "check" button shows.
+function sslCommerzCheck(check: TransactionCheck, expected: number): GatewayCheck {
+  if (check.status === "UNKNOWN") return { ok: false, error: "Couldn't reach SSLCommerz. Try again in a minute." };
+  const t = check.transaction;
+  if (!t) return { ok: false, error: "SSLCommerz has no record of this payment." };
+  const amount = Number(t.amount);
+  return {
+    ok: true,
+    paid: check.status === "PAID",
+    code: null,
+    message: `SSLCommerz: ${t.status}${t.risk_level === "1" ? " (flagged risky)" : ""}`,
+    amount: Number.isFinite(amount) ? amount : null,
+    expected,
+    method: t.card_type || null,
+  };
+}
 import type {
   GatewayCheck,
   IssueAction,
@@ -207,9 +226,13 @@ export async function checkIssueWithShurjoPay(orderId: string): Promise<GatewayC
 
   const payment = await prisma.payment.findUnique({
     where: { orderId },
-    select: { paymentId: true, amount: true },
+    select: { paymentId: true, amount: true, paymentGateway: true },
   });
-  if (!payment?.paymentId) return { ok: false, error: "This order never reached ShurjoPay." };
+  if (!payment?.paymentId) return { ok: false, error: "This order never reached a payment gateway." };
+
+  if (payment.paymentGateway === SSLCOMMERZ) {
+    return sslCommerzCheck(await getTransaction(payment.paymentId), payment.amount);
+  }
 
   const result = await verifyPayment(payment.paymentId, { attempts: 2, timeoutMs: 15_000 });
   if (result.state === "UNSURE" && !result.item) {
@@ -270,10 +293,13 @@ export async function resolvePaymentIssue(
       packageId: true,
       qty: true,
       source: true,
-      payment: { select: { id: true, status: true, amount: true, paymentId: true } },
+      payment: {
+        select: { id: true, status: true, amount: true, paymentId: true, paymentGateway: true },
+      },
     },
   });
   if (!order?.payment) return { success: false, error: "Order or payment not found." };
+  const isSslCommerz = order.payment.paymentGateway === SSLCOMMERZ;
 
   // Recorded for every resolution; also what takes the item off the list.
   const mark = (what: string, summary: string) =>
@@ -291,14 +317,15 @@ export async function resolvePaymentIssue(
       // ── Stuck: check ShurjoPay, confirm + notify if paid ──
       case "CONFIRM": {
         const result = await reconcileOrder(orderId, { log, actor });
+        const gw = isSslCommerz ? "SSLCommerz" : "ShurjoPay";
         const messages: Record<string, [boolean, string]> = {
-          CONFIRMED: [true, "Paid at ShurjoPay — order confirmed, email and SMS sent."],
+          CONFIRMED: [true, `Paid at ${gw} — order confirmed, email and SMS sent.`],
           ALREADY_PAID: [true, "Already confirmed."],
-          NOT_PAID: [false, "ShurjoPay has no successful payment for this order. Use “Release slot” if it's abandoned."],
-          NO_SESSION: [false, "This order never reached ShurjoPay."],
+          NOT_PAID: [false, `${gw} has no successful payment for this order. Use “Release slot” if it's abandoned.`],
+          NO_SESSION: [false, `This order never reached ${gw}.`],
           NEEDS_REVIEW: [false, "Paid, but the amount doesn't match — it's now listed as an amount mismatch."],
           PAID_NO_SLOT: [false, "Paid, but no slot is left — it's now listed as a refund."],
-          GATEWAY_ERROR: [false, "Couldn't reach ShurjoPay. Try again in a minute."],
+          GATEWAY_ERROR: [false, `Couldn't reach ${gw}. Try again in a minute.`],
         };
         const [ok, message] = messages[result];
         if (!ok) return { success: false, error: message };
@@ -321,6 +348,45 @@ export async function resolvePaymentIssue(
           return { success: false, error: `Order is already ${order.status.toLowerCase()}.` };
         }
         if (!order.payment.paymentId) return { success: false, error: "No ShurjoPay payment to confirm." };
+
+        if (isSslCommerz) {
+          const check = await getTransaction(order.payment.paymentId);
+          if (check.status !== "PAID") {
+            return {
+              success: false,
+              error: check.status === "UNKNOWN" ? "Couldn't confirm with SSLCommerz right now." : "SSLCommerz says this was not paid.",
+            };
+          }
+          const paid = check.transaction;
+          const sslTransactionId = paid.bank_tran_id || paid.val_id || order.payment.paymentId;
+          const sslOutcome = await confirmPaidOrder({
+            paymentId: order.payment.id,
+            orderId,
+            paymentData: {
+              transactionId: sslTransactionId,
+              paymentMethod: paid.card_type || SSLCOMMERZ,
+              paymentGateway: SSLCOMMERZ,
+              paymentId: order.payment.paymentId,
+            },
+          });
+          if (sslOutcome !== "CONFIRMED" && sslOutcome !== "ALREADY_PAID") {
+            return { success: false, error: "Paid, but no slot is left — it's now listed as a refund." };
+          }
+          if (sslOutcome === "CONFIRMED") {
+            await runPostPaymentSteps({
+              orderId,
+              transactionId: sslTransactionId,
+              paymentMethod: paid.card_type || undefined,
+              log,
+            });
+          }
+          await mark(
+            "confirmed_anyway",
+            `Confirmed despite review: SSLCommerz ৳${fmt(paid.amount)}, order ৳${fmt(order.payment.amount)}`,
+          );
+          return { success: true, error: null, message: "Order confirmed. Email and SMS sent." };
+        }
+
         const v = await verifyPayment(order.payment.paymentId, { attempts: 2, timeoutMs: 15_000 });
         if (v.state !== "PAID") {
           return {
@@ -398,7 +464,15 @@ export async function resolvePaymentIssue(
           return { success: false, error: `Order is already ${order.status.toLowerCase()}.` };
         }
         if (order.source !== "ONLINE") return { success: false, error: "Only online orders can be released here." };
-        if (order.payment.paymentId) {
+        if (order.payment.paymentId && isSslCommerz) {
+          const check = await getTransaction(order.payment.paymentId);
+          if (check.status === "PAID") {
+            return { success: false, error: "SSLCommerz says this WAS paid — confirm it instead of releasing." };
+          }
+          if (check.status === "UNKNOWN") {
+            return { success: false, error: "Couldn't reach SSLCommerz, so the slot wasn't released. Try again shortly." };
+          }
+        } else if (order.payment.paymentId) {
           const v = await verifyPayment(order.payment.paymentId, { attempts: 2, timeoutMs: 15_000 });
           if (v.state === "PAID") {
             return { success: false, error: "ShurjoPay says this WAS paid — confirm it instead of releasing." };

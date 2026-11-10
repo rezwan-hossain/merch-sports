@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import RetryPaymentClient from "@/module/payment/components/RetryPaymentClient";
 import { redirect } from "next/navigation";
+import { SSLCOMMERZ, isSslCommerzEnabled } from "@/lib/payment/sslcommerz/config";
 
 type SearchParams = Promise<{ orderId?: string }>;
 
@@ -69,6 +70,11 @@ export default async function RetryPaymentPage({
       customerName: order.registration.fullName,
       customerEmail: user.email ?? "",
       customerPhone: order.registration.phone,
+      // Retry on the gateway the runner chose, while it's still switched on.
+      gateway:
+        order.payment?.paymentGateway === SSLCOMMERZ && isSslCommerzEnabled()
+          ? SSLCOMMERZ
+          : "shurjopay",
     }),
   );
 

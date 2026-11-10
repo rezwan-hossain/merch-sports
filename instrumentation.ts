@@ -68,11 +68,24 @@ export async function register() {
   setInterval(reconcile, RECONCILE_INTERVAL_MS).unref();
   setTimeout(reconcile, 45_000).unref();
   const { verifyShurjoPayPayment, SP_CODE } = await import("./lib/payment/shurjopay");
+  const { SSLCOMMERZ } = await import("./lib/payment/sslcommerz/config");
+  const { getTransaction } = await import("./lib/payment/sslcommerz/api");
+  const { prisma } = await import("./lib/prisma");
 
-  // Before releasing an order that reached ShurjoPay, ask ShurjoPay whether it
-  // was actually paid (the callback can be lost). Throws on API errors, which
-  // makes the sweep skip that order until the next run.
+  // Before releasing an order that reached a gateway, ask that gateway whether
+  // it was actually paid (the callback can be lost). Throws on API errors,
+  // which makes the sweep skip that order until the next run.
   const verifyGatewayPayment = async (spOrderId: string) => {
+    const session = await prisma.payment.findUnique({
+      where: { paymentId: spOrderId },
+      select: { paymentGateway: true },
+    });
+    if (session?.paymentGateway === SSLCOMMERZ) {
+      const check = await getTransaction(spOrderId);
+      if (check.status === "UNKNOWN") throw new Error(`SSLCommerz: ${check.error}`);
+      return check.status === "PAID" ? ("PAID" as const) : ("NOT_PAID" as const);
+    }
+
     const items = await verifyShurjoPayPayment(spOrderId);
     return items.some((i) => Number(i.sp_code) === SP_CODE.SUCCESS)
       ? ("PAID" as const)

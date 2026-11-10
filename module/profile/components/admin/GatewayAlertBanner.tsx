@@ -39,11 +39,11 @@ export function GatewayAlertBanner() {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-red-900">
-            Online payments are failing — runners can&apos;t pay
+            {alert.gateway} payments are failing — runners can&apos;t pay with it
           </p>
           <p className="mt-0.5 text-xs text-red-800/80">
             Last failure {dhaka(alert.at)}
-            {alert.spCode !== null && <> · ShurjoPay code {alert.spCode}</>}
+            {alert.spCode !== null && <> · {alert.gateway} code {alert.spCode}</>}
           </p>
 
           <p className="mt-2 text-sm text-red-900">{alert.meaning}.</p>

@@ -422,3 +422,30 @@ h6 {
     backface-visibility: hidden;
   }
 }
+
+/* Footer credit heart: a "lub-dub" heartbeat. Still for reduced motion. */
+@keyframes heartbeat {
+  0%,
+  40%,
+  100% {
+    transform: scale(1);
+  }
+  10% {
+    transform: scale(1.25);
+  }
+  20% {
+    transform: scale(1.05);
+  }
+  30% {
+    transform: scale(1.2);
+  }
+}
+.animate-heartbeat {
+  animation: heartbeat 1.8s ease-in-out infinite;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-heartbeat {
+    animation: none;
+  }
+}

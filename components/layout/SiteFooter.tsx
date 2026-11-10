@@ -3,7 +3,7 @@
 // Site footer in the homepage style: dark green, a big condensed sign-off line
 // with a lime accent, then brand · explore · help · contact columns and a
 // bottom bar. Links only point to pages and sections that exist.
-import { ArrowUpRight, Facebook, Instagram, Mail, MapPin, Phone, Youtube } from "lucide-react";
+import { ArrowUpRight, Facebook, FileBadge, Heart, Instagram, Mail, MapPin, Phone, Youtube } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import CurrentYear from "../ui/CurrentYear";
@@ -11,6 +11,11 @@ import CurrentYear from "../ui/CurrentYear";
 const EMAIL = "info@merchcommunication.com";
 const PHONE = "+8801862221943";
 const ADDRESS = "House 32, Road 08, Block H, Mirpur 2, Dhaka";
+const TRADE_LICENSE = "TRAD/DNCC/019367/2024";
+
+// Developer credit in the bottom bar ("Made with ♥ by …").
+const DEVELOPER_NAME = "Rezwan Hossain";
+const DEVELOPER_URL = "https://www.linkedin.com/in/rezwan-hossain/";
 
 // Social profiles. Paste a link into `href` to make that icon clickable;
 // while it's empty the icon shows but isn't a link (no dead "#" links).
@@ -143,6 +148,7 @@ const SiteFooter = () => {
                 { icon: Mail, text: EMAIL, href: `mailto:${EMAIL}` },
                 { icon: Phone, text: PHONE, href: `tel:${PHONE}` },
                 { icon: MapPin, text: ADDRESS },
+                { icon: FileBadge, text: `Trade License: ${TRADE_LICENSE}` },
               ].map(({ icon: Icon, text, href }) => {
                 const body = (
                   <>
@@ -173,9 +179,19 @@ const SiteFooter = () => {
           <p className="text-xs text-white/45">
             © <CurrentYear /> Merch Sports. All rights reserved.
           </p>
-          <p className="inline-flex items-center gap-2 text-xs text-white/45">
+          <p className="inline-flex items-center gap-1.5 text-xs text-white/45">
             <span className="h-1.5 w-1.5 rounded-full bg-neon-lime" aria-hidden />
-            Made for runners in Bangladesh
+            Made with
+            <Heart className="h-3.5 w-3.5 animate-heartbeat fill-red-500 text-red-500" aria-label="love" />
+            by
+            <a
+              href={DEVELOPER_URL}
+              target="_blank"
+              rel="noopener"
+              className="font-medium text-white/70 transition-colors hover:text-neon-lime"
+            >
+              {DEVELOPER_NAME}
+            </a>
           </p>
         </div>
       </div>

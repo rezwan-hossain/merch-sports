@@ -42,8 +42,8 @@ export const OrderSummary = ({
   const discount = appliedCoupon?.discountAmount || 0;
   const hasDiscount = discount > 0;
 
-  // Privacy consent — ticked by default; unticking blocks payment.
-  const [agreedToPrivacy, setAgreedToPrivacy] = useState(true);
+  // Privacy consent — unticked by default; the runner must tick it to pay.
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
 
   const isButtonDisabled = loading || !isFormValid || !agreedToPrivacy;
 
@@ -126,7 +126,7 @@ export const OrderSummary = ({
         sslcommerzEnabled={sslcommerzEnabled}
       />
 
-      {/* Privacy consent (ticked by default) */}
+      {/* Privacy consent (unticked by default — required to pay) */}
       <label className="mb-6 sm:mb-8 flex cursor-pointer items-start gap-2.5 rounded-lg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-neon-lime/50 has-[:focus-visible]:ring-offset-2">
         <input
           type="checkbox"
@@ -157,7 +157,7 @@ export const OrderSummary = ({
       {/* Consent hint when unticked */}
       {!agreedToPrivacy && (
         <p className="mb-3 text-xs text-amber-600 text-center">
-          Please agree to the privacy policy to continue
+          Tick the box above to agree to the privacy policy and continue
         </p>
       )}
 

@@ -47,6 +47,11 @@ type Props = {
 
 // "5. Refund & Cancellation" → "Refund & Cancellation" (the number is drawn separately)
 const stripNumber = (title: string) => title.replace(/^\s*\d+\.\s*/, "");
+
+// globals.css gives every h1–h6 the condensed display font (Anton). That's
+// right for the big hero, but hard to read for document headings, so these
+// use the body font. (Inline style: a Tailwind class can't beat that rule.)
+const readableHeading = { fontFamily: "var(--font-body)" };
 const sectionId = (i: number) => `section-${i + 1}`;
 
 export function LegalDocument({ policy, heroTitle, title, lastUpdated, summary, sections, closing }: Props) {
@@ -102,7 +107,9 @@ export function LegalDocument({ policy, heroTitle, title, lastUpdated, summary, 
           {/* ── The document ──────────────────────────────────────── */}
           <article className="min-w-0">
             <header className="mb-6">
-              <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">{title}</h2>
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl" style={readableHeading}>
+                {title}
+              </h2>
               <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-gray-500">
                 <CalendarDays className="h-4 w-4" aria-hidden />
                 Last updated {lastUpdated}
@@ -120,7 +127,10 @@ export function LegalDocument({ policy, heroTitle, title, lastUpdated, summary, 
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-900 text-sm font-bold text-neon-lime sm:h-9 sm:w-9">
                       {i + 1}
                     </span>
-                    <h3 className="flex min-w-0 items-center gap-2 text-base font-semibold text-gray-900 sm:text-lg">
+                    <h3
+                      className="flex min-w-0 items-center gap-2 text-base font-semibold text-gray-900 sm:text-lg"
+                      style={readableHeading}
+                    >
                       {section.icon && <section.icon className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />}
                       {stripNumber(section.title)}
                     </h3>

@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
-import { getShurjoPayToken, createShurjoPayPayment } from "@/lib/shurjopay";
+import { getShurjoPayToken, createShurjoPayPayment } from "@/lib/payment/shurjopay";
 import { getClientIp } from "@/lib/get-client-ip";
 import { logger } from "@/lib/logger";
 import { getRequestId } from "@/utils/requestUtils";

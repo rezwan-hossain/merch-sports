@@ -1,4 +1,4 @@
-// lib/shurjopay.ts
+// lib/payment/shurjopay/index.ts
 //
 // The one ShurjoPay client for the whole app.
 //
@@ -7,6 +7,51 @@
 //
 //   Checking a payment (callback, reconciler, hold sweep — via lib/payment-verify.ts):
 //     verifyShurjoPayPayment, SP_CODE, getPaymentStatusMessage
+//
+// ─── Payment request flow (end to end) ─────────────────────────────────────
+//
+//  1. CREATE ORDER — placeOrder (app/actions/checkout.ts)
+//     Order PENDING + Registration + Payment PENDING, and the package slot is
+//     claimed with a 24h hold (Order.holdExpiresAt, lib/slot-hold.ts).
+//
+//  2. START PAYMENT — initiateShurjoPayPayment (app/actions/payment.ts)
+//     a. Payment config sane? (lib/payment-config.ts) — else refuse + audit.
+//     b. Order already has a ShurjoPay session (Payment.paymentId)? Ask
+//        ShurjoPay first (reconcileOrder) — if that one was paid, confirm it
+//        instead of charging twice.
+//     c. Refresh the 24h hold (or reclaim a system-released order's slot).
+//     d. getShurjoPayToken   POST {API}/api/get_token   {username, password}
+//        → no token: "Payment gateway unavailable" + audit payment.gateway_error
+//     e. createShurjoPayPayment POST {API}/api/secret-pay  (Bearer token)
+//        order_id/value1 = our Order.id, return_url = cancel_url = SHURJOPAY_CALLBACK_URL
+//        → no checkout_url: "Failed to initiate payment" + audit
+//     f. Save sp_order_id in Payment.paymentId, send the browser to checkout_url.
+//
+//  3. CUSTOMER PAYS on ShurjoPay's page (bKash, Nagad, card, …).
+//
+//  4. CALLBACK — GET/POST /api/payment/shurjopay/callback?order_id=<sp_order_id>
+//     (app/api/payment/shurjopay/callback/route.ts). The query string is never
+//     trusted: it asks ShurjoPay via verifyShurjoPayPayment (lib/payment-verify.ts,
+//     retried), then by sp_code:
+//       1000 success → amount/order match? → confirmPaidOrder (race-safe)
+//                      → coupon usage + email + SMS → /payment/success
+//                      mismatch → audit, slot kept → admin reviews
+//                      paid but no slot → audit "REFUND NEEDED"
+//       1001 declined / 1002 cancelled → Payment FAILED, releaseHold → /payment/failed
+//       other code / ShurjoPay unreachable → stays PENDING → /payment/processing
+//     A callback for an older session (customer retried) never fails/releases
+//     the newer one.
+//
+//  5. SAFETY NETS when the callback is lost (tab closed, network drop):
+//     - /payment/processing polls getPaymentProgress (app/actions/payment-status.ts),
+//       which asks ShurjoPay at most every 15s.
+//     - Reconciler, every 5 min (instrumentation.ts → lib/payment-reconcile.ts):
+//       PENDING online orders from the last 3 days → ask ShurjoPay → confirm paid.
+//     - Hold sweep, hourly (instrumentation.ts → releaseExpiredHolds): holds past
+//       24h are cancelled ONLY after ShurjoPay confirms no payment; paid ones are
+//       parked for an admin (Payment issues panel).
+//
+// ───────────────────────────────────────────────────────────────────────────
 //
 // The two sides deliberately handle a refused login differently:
 //   - checkout's getShurjoPayToken RETURNS ShurjoPay's reply even without a

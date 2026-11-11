@@ -105,6 +105,42 @@ export async function sendSMS({
 }
 
 // Helper to format phone number for Bangladesh
+// ─── Balance ─────────────────────────────────────────────────────────────
+// BulkSMSBD: GET {server}/api/getBalanceApi?api_key=…  (same server as smsapi)
+//   ok    → {"response_code":202,"balance":369.62}         (Taka)
+//   error → {"response_code":1011,"error_message":"user id not found in this <KEY> key"}
+// The error message repeats the API key, so it's always hidden before use.
+
+/** Warn when the SMS balance drops below this many Taka (SMS_LOW_BALANCE, default 100). */
+export function smsLowBalanceThreshold(): number {
+  const n = Number(process.env.SMS_LOW_BALANCE);
+  return process.env.SMS_LOW_BALANCE && Number.isFinite(n) && n >= 0 ? n : 100;
+}
+
+export async function getSmsBalance(): Promise<
+  { ok: true; balance: number } | { ok: false; error: string }
+> {
+  const key = process.env.SMS_API_KEY ?? "";
+  if (!key) return { ok: false, error: "SMS_API_KEY is not set" };
+  const hideKey = (text: string) => text.split(key).join("<key>");
+
+  try {
+    const server = new URL(process.env.SMS_API_URL || "http://139.99.39.237/api/smsapi").origin;
+    const res = await fetch(`${server}/api/getBalanceApi?api_key=${encodeURIComponent(key)}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
+    });
+    const data = (await res.json()) as { response_code?: number | string; balance?: unknown; error_message?: string };
+    const code = Number(data.response_code);
+    const balance = Number(data.balance);
+    if (code === SMS_ACCEPTED && Number.isFinite(balance)) return { ok: true, balance };
+    const reason = SMS_ERRORS[code] || data.error_message || "unexpected reply";
+    return { ok: false, error: hideKey(`SMS gateway code ${data.response_code ?? "?"}: ${reason}`) };
+  } catch (err) {
+    return { ok: false, error: hideKey(err instanceof Error ? err.message : String(err)) };
+  }
+}
+
 export function formatBDPhone(phone: string): string {
   let cleaned = phone.replace(/\D/g, "");
 

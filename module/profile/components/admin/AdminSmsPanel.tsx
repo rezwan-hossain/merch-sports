@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { SmsBalanceBanner } from "./SmsBalanceBanner";
 import {
   getSmsSettings,
   saveDefaultSmsTemplate,
@@ -267,6 +268,9 @@ export function AdminSmsPanel() {
           The SMS a runner gets when their payment is confirmed.
         </p>
       </div>
+
+      {/* Credit left on the SMS account (warns when low / empty) */}
+      <SmsBalanceBanner alwaysShow />
 
       {flash && (
         <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">

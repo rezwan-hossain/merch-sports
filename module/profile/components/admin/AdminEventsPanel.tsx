@@ -12,6 +12,7 @@ import { EventOrdersModal } from "./EventOrdersModal";
 import { EventActivityModal } from "./EventActivityModal";
 import { PaymentIssuesBanner } from "./PaymentIssuesBanner";
 import { GatewayAlertBanner } from "./GatewayAlertBanner";
+import { SmsBalanceBanner } from "./SmsBalanceBanner";
 import { PaymentIssuesModal } from "./PaymentIssuesModal";
 import { getPaymentIssues } from "@/app/actions/payment-issues";
 import type { PaymentIssue } from "@/types/payment-issues";
@@ -112,6 +113,9 @@ export function AdminEventsPanel({
         <>
           {/* Online payments can't start (ShurjoPay refusing / unreachable) */}
           <GatewayAlertBanner />
+
+          {/* SMS credit low / empty / can't check (hidden when fine) */}
+          <SmsBalanceBanner />
 
           {/* Payments the automatic handling leaves to a person */}
           <PaymentIssuesBanner

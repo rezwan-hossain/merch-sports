@@ -7,7 +7,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { audit } from "@/lib/audit";
-import { formatBDPhone, sendSMS } from "@/lib/sms";
+import { formatBDPhone, getSmsBalance, sendSMS, smsLowBalanceThreshold } from "@/lib/sms";
 import { isValidBDPhone } from "@/lib/registration-options";
 import {
   DEFAULT_CONFIRMATION_SMS,
@@ -16,6 +16,27 @@ import {
   type SmsVars,
 } from "@/lib/sms-template";
 import { SMS_SETTING_KEY } from "@/lib/sms-template-server";
+
+export type SmsBalanceStatus = {
+  /** Taka left on the SMS account, or null when it couldn't be read. */
+  balance: number | null;
+  /** Warn below this (SMS_LOW_BALANCE, default ৳100). */
+  threshold: number;
+  low: boolean;
+  /** Why the balance couldn't be read (wrong key, provider down…). */
+  error: string | null;
+};
+
+// ─── SMS balance (admin banner + SMS panel) ──────────────────────────────
+export async function getSmsBalanceStatus(): Promise<SmsBalanceStatus | null> {
+  const { error } = await requireAdmin();
+  if (error) return null;
+
+  const threshold = smsLowBalanceThreshold();
+  const result = await getSmsBalance();
+  if (!result.ok) return { balance: null, threshold, low: false, error: result.error };
+  return { balance: result.balance, threshold, low: result.balance < threshold, error: null };
+}
 
 export async function getSmsSettings(): Promise<{
   builtin: string;

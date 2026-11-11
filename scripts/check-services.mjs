@@ -278,6 +278,31 @@ if (env.SMS_API_KEY) {
       );
     }
   }
+  // Balance (read-only — sends nothing, costs nothing). Same check as the admin banner.
+  try {
+    const server = new URL(env.SMS_API_URL || "http://139.99.39.237/api/smsapi").origin;
+    const threshold =
+      env.SMS_LOW_BALANCE && Number.isFinite(Number(env.SMS_LOW_BALANCE)) ? Number(env.SMS_LOW_BALANCE) : 100;
+    const { data, text } = await fetchJson(`${server}/api/getBalanceApi?api_key=${encodeURIComponent(env.SMS_API_KEY)}`);
+    const hideKey = (s) => String(s ?? "").split(env.SMS_API_KEY).join("<key>");
+    const balance = Number(data?.balance);
+    if (Number(data?.response_code) === 202 && Number.isFinite(balance)) {
+      const shown = `৳${balance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      if (balance <= 0) bad(`SMS balance is EMPTY (${shown}) — confirmation SMS are failing`, "Top up your SMS account.");
+      else if (balance < threshold) warn(`SMS balance is low: ${shown} (warning below ৳${threshold})`, "Top up soon.");
+      else ok(`SMS balance ${shown}`);
+    } else {
+      bad(
+        `Couldn't read the SMS balance: code ${data?.response_code ?? "-"} ${hideKey(data?.error_message || text)}`,
+        Number(data?.response_code) === 1011
+          ? "API key not recognised — copy the right key from your SMS panel."
+          : "See the code list at the top of lib/sms.ts.",
+      );
+    }
+  } catch (err) {
+    bad(`Can't reach the SMS gateway: ${err.message}`);
+  }
+
   if (!smsTo) {
     console.log(
       "  (skipped sending — run with --sms 01XXXXXXXXX to send one test SMS)",

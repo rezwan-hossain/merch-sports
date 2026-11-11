@@ -172,6 +172,23 @@ const SiteFooter = () => {
           </div>
         </div>
 
+        {/* ─── Payment banner (SSLCommerz merchant requirement) ───
+            Official banner from SSLCommerz. It's very wide (≈30:1): on desktop it
+            fits the width; on phones it keeps a readable height and scrolls
+            sideways. New banner → new file name (/images is cached for a year). */}
+        <div className="border-t border-white/10 py-6">
+          <div className="overflow-x-auto rounded-xl bg-white px-3 py-2.5 [scrollbar-width:thin]">
+            <Image
+              src="/images/sslcommerz-payment-banner-apr26.webp"
+              alt="Pay with Visa, Mastercard, American Express, bKash, Nagad, Rocket, Upay, internet banking and more — verified by SSLCommerz"
+              width={2558}
+              height={84}
+              sizes="1280px"
+              className="h-9 w-auto max-w-none lg:h-auto lg:w-full lg:max-w-full"
+            />
+          </div>
+        </div>
+
         {/* ─── Bottom bar ─── */}
         <div className="flex flex-col items-center justify-between gap-3 border-t border-white/10 py-6 text-center sm:flex-row sm:text-left">
           <p className="text-xs text-white/45">

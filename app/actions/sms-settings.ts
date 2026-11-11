@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { audit } from "@/lib/audit";
 import { formatBDPhone, getSmsBalance, sendSMS, smsLowBalanceThreshold } from "@/lib/sms";
+import { getLastSmsDelivery, type LastSmsDelivery } from "@/lib/notification-log";
 import { isValidBDPhone } from "@/lib/registration-options";
 import {
   DEFAULT_CONFIRMATION_SMS,
@@ -25,6 +26,8 @@ export type SmsBalanceStatus = {
   low: boolean;
   /** Why the balance couldn't be read (wrong key, provider down…). */
   error: string | null;
+  /** The last real SMS result — catches failures the wallet can't show. */
+  lastSms: LastSmsDelivery | null;
 };
 
 // ─── SMS balance (admin banner + SMS panel) ──────────────────────────────
@@ -33,9 +36,9 @@ export async function getSmsBalanceStatus(): Promise<SmsBalanceStatus | null> {
   if (error) return null;
 
   const threshold = smsLowBalanceThreshold();
-  const result = await getSmsBalance();
-  if (!result.ok) return { balance: null, threshold, low: false, error: result.error };
-  return { balance: result.balance, threshold, low: result.balance < threshold, error: null };
+  const [result, lastSms] = await Promise.all([getSmsBalance(), getLastSmsDelivery().catch(() => null)]);
+  if (!result.ok) return { balance: null, threshold, low: false, error: result.error, lastSms };
+  return { balance: result.balance, threshold, low: result.balance < threshold, error: null, lastSms };
 }
 
 export async function getSmsSettings(): Promise<{

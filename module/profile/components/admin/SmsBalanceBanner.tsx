@@ -5,14 +5,26 @@ import { useEffect, useState } from "react";
 import { MessageSquareWarning, MessageSquare } from "lucide-react";
 import { getSmsBalanceStatus, type SmsBalanceStatus } from "@/app/actions/sms-settings";
 
+const dhakaTime = (iso: string) =>
+  new Date(iso).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Dhaka",
+  });
+
 const taka = (n: number) =>
   `৳${n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /**
- * SMS credit warning. Confirmation SMS silently stop when the SMS account runs
- * out of balance (gateway code 1007), so admins see it here first.
+ * SMS health warning. Shows (most important first):
+ *  1. the last real confirmation SMS FAILED — whatever the reason. The wallet
+ *     can show money while every send fails (e.g. code 1007 "Not Enough
+ *     Balance in this ssbd Account"), so real results win over the balance;
+ *  2. the balance can't be read; 3. it's empty; 4. it's low.
  *
- * - default: only shows when something is wrong (low, empty, or can't check)
+ * - default: only shows when something is wrong
  * - `alwaysShow`: also shows a small "balance OK" line (SMS settings panel)
  */
 export function SmsBalanceBanner({ alwaysShow = false }: { alwaysShow?: boolean }) {
@@ -23,6 +35,28 @@ export function SmsBalanceBanner({ alwaysShow = false }: { alwaysShow?: boolean 
   }, []);
 
   if (!status) return null;
+
+  // 1. The last real SMS failed — runners are not getting their SMS right now.
+  if (status.lastSms?.status === "failed") {
+    const { at, reason, failuresInARow, lastSentAt } = status.lastSms;
+    return (
+      <Banner
+        tone="red"
+        title={`Confirmation SMS are failing${failuresInARow > 1 ? ` — ${failuresInARow} in a row` : ""}`}
+        icon={MessageSquareWarning}
+      >
+        Last attempt {dhakaTime(at)}: <strong>{reason ?? "no reason given"}</strong>.{" "}
+        {lastSentAt ? `Last SMS that went through: ${dhakaTime(lastSentAt)}. ` : ""}
+        Runners are not getting their confirmation SMS (emails still go out).{" "}
+        {status.balance === null
+          ? "Check your SMS provider."
+          : status.balance < status.threshold
+            ? `The wallet is low (${taka(status.balance)}) — top it up.`
+            : `The wallet shows ${taka(status.balance)}, so the problem is on the SMS provider's side — contact them.`}{" "}
+        This clears by itself once an SMS goes through.
+      </Banner>
+    );
+  }
 
   // Couldn't read the balance (wrong key, provider down…)
   if (status.error) {

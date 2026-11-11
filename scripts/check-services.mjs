@@ -279,6 +279,7 @@ if (env.SMS_API_KEY) {
     }
   }
   // Balance (read-only — sends nothing, costs nothing). Same check as the admin banner.
+  let smsWallet = null;
   try {
     const server = new URL(env.SMS_API_URL || "http://139.99.39.237/api/smsapi").origin;
     const threshold =
@@ -287,6 +288,7 @@ if (env.SMS_API_KEY) {
     const hideKey = (s) => String(s ?? "").split(env.SMS_API_KEY).join("<key>");
     const balance = Number(data?.balance);
     if (Number(data?.response_code) === 202 && Number.isFinite(balance)) {
+      smsWallet = balance;
       const shown = `৳${balance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       if (balance <= 0) bad(`SMS balance is EMPTY (${shown}) — confirmation SMS are failing`, "Top up your SMS account.");
       else if (balance < threshold) warn(`SMS balance is low: ${shown} (warning below ৳${threshold})`, "Top up soon.");
@@ -301,6 +303,49 @@ if (env.SMS_API_KEY) {
     }
   } catch (err) {
     bad(`Can't reach the SMS gateway: ${err.message}`);
+  }
+
+  // Did the last REAL confirmation SMS go out? The wallet can show money while
+  // every send fails (e.g. code 1007 "Not Enough Balance in this ssbd Account"),
+  // so this reads the delivery log (read-only) — same as the admin banner.
+  try {
+    const { PrismaClient } = require(`${cwd}/lib/generated/prisma`);
+    const db = new PrismaClient();
+    try {
+      const smsActions = ["notification.sms_sent", "notification.sms_failed"];
+      const latest = await db.auditLog.findFirst({
+        where: { action: { in: smsActions } },
+        orderBy: { createdAt: "desc" },
+        select: { action: true, createdAt: true, changes: true },
+      });
+      const when = (d) =>
+        d.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Dhaka" });
+      if (!latest) {
+        console.log("  (no confirmation SMS in the delivery log yet)");
+      } else if (latest.action === "notification.sms_sent") {
+        ok(`Last confirmation SMS went through (${when(latest.createdAt)}, Dhaka)`);
+      } else {
+        const reason = latest.changes?.reason?.[1] ?? "no reason given";
+        const lastSent = await db.auditLog.findFirst({
+          where: { action: "notification.sms_sent" },
+          orderBy: { createdAt: "desc" },
+          select: { createdAt: true },
+        });
+        const inARow = await db.auditLog.count({
+          where: { action: "notification.sms_failed", ...(lastSent && { createdAt: { gt: lastSent.createdAt } }) },
+        });
+        bad(
+          `Last confirmation SMS FAILED (${when(latest.createdAt)}, Dhaka) — ${inARow} in a row: ${reason}`,
+          smsWallet !== null && smsWallet > 0
+            ? `The wallet has ৳${smsWallet.toFixed(2)}, so the problem is on the SMS provider's side — contact them.${lastSent ? ` Last SMS that worked: ${when(lastSent.createdAt)}.` : ""}`
+            : "Top up the SMS account, then send a test with --sms 01XXXXXXXXX.",
+        );
+      }
+    } finally {
+      await db.$disconnect();
+    }
+  } catch (err) {
+    warn(`Couldn't read the SMS delivery log: ${err.message.split("\n")[0]}`);
   }
 
   if (!smsTo) {

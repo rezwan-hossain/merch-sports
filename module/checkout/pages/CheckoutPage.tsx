@@ -5,6 +5,7 @@ import { useState, useRef, useMemo, useEffect } from "react";
 import { BillingForm, BillingFormRef } from "../components/BillingForm";
 import { OrderSummary } from "../components/OrderSummary";
 import { CheckoutAlert } from "../components/CheckoutAlert";
+import { paymentMethodName } from "../components/PaymentMethodSelector";
 import { HeroText } from "@/components/ui/HeroText";
 import { BillingFormData, CheckoutItem, AppliedCoupon } from "@/types/checkout";
 import { useRouter } from "next/navigation";
@@ -274,6 +275,7 @@ const CheckoutPage = ({
         {error && (
           <CheckoutAlert
             message={error}
+            gatewayName={paymentMethodName(paymentMethod) ?? undefined}
             onRetry={handlePlaceOrder}
             onDismiss={() => setError("")}
             retrying={loading}

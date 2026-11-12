@@ -62,6 +62,8 @@ const STYLES: Record<
 
 type Props = {
   message: string;
+  /** The payment gateway the runner chose ("ShurjoPay" / "SSLCommerz"). */
+  gatewayName?: string;
   onRetry: () => void;
   onDismiss: () => void;
   retrying: boolean;
@@ -69,6 +71,7 @@ type Props = {
 
 export function CheckoutAlert({
   message,
+  gatewayName = "the payment gateway",
   onRetry,
   onDismiss,
   retrying,
@@ -89,7 +92,7 @@ export function CheckoutAlert({
 
   const body =
     kind === "gateway"
-      ? "We couldn't connect to ShurjoPay just now. Your details are saved — please try again in a few minutes."
+      ? `We couldn't connect to ${gatewayName} just now. Your details are saved — please try again in a few minutes.`
       : kind === "registered"
         ? "This email already has a confirmed registration for this event. Your confirmation was sent by email, and you can see it in your dashboard."
         : kind === "form"

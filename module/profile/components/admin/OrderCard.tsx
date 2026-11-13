@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { EditRegistrationForm } from "./EditRegistrationForm";
 import { OrderDeliveries } from "./OrderDeliveries";
+import { gatewayLabel } from "@/lib/payment/gateway-label";
 
 type Props = {
   order: EventOrder;
@@ -117,6 +118,8 @@ export function OrderCard({
     : order.user.email;
 
   const orderAmount = order.payment?.amount || order.package.price * order.qty;
+  // "ShurjoPay" / "SSLCommerz" (null = never reached a gateway)
+  const gateway = gatewayLabel(order.payment?.paymentGateway, order.source);
 
   const cardBg = expanded
     ? isGuest
@@ -153,7 +156,7 @@ export function OrderCard({
       {/* ─── Header Row ─── */}
       <div
         onClick={onToggle}
-        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50/50 transition-colors"
+        className="flex flex-wrap items-center gap-3 p-4 cursor-pointer hover:bg-gray-50/50 transition-colors sm:flex-nowrap"
       >
         {/* Avatar */}
         <div className="flex-shrink-0 relative">
@@ -222,8 +225,8 @@ export function OrderCard({
           </div>
         </div>
 
-        {/* Amount + Statuses */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Amount + Statuses — own line on phones (under the name), same line from sm up */}
+        <div className="flex w-full flex-wrap items-center justify-end gap-1.5 sm:w-auto sm:flex-shrink-0 sm:flex-nowrap sm:gap-2">
           <span className="text-sm font-bold text-gray-900">
             ৳{orderAmount.toLocaleString()}
           </span>
@@ -242,6 +245,20 @@ export function OrderCard({
               className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full ${paymentConfig.bg} ${paymentConfig.color}`}
             >
               {paymentConfig.label}
+            </span>
+          )}
+
+          {/* Payment gateway (ShurjoPay / SSLCommerz) — online orders that reached one */}
+          {order.source !== "MANUAL" && gateway && (
+            <span
+              className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border ${
+                gateway === "SSLCommerz"
+                  ? "bg-blue-50 text-blue-700 border-blue-200"
+                  : "bg-teal-50 text-teal-700 border-teal-200"
+              }`}
+              title={`Payment gateway: ${gateway}`}
+            >
+              {gateway}
             </span>
           )}
 
@@ -472,8 +489,8 @@ export function OrderCard({
                         <span className="flex items-center gap-1">
                           <CreditCard size={12} className="text-gray-400" />
                           {order.payment.paymentMethod}
-                          {order.payment.paymentGateway &&
-                            ` via ${order.payment.paymentGateway}`}
+                          {gateway && gateway.toLowerCase() !== order.payment.paymentMethod.toLowerCase() &&
+                            ` via ${gateway}`}
                         </span>
                       )}
                       {order.payment.transactionId && (

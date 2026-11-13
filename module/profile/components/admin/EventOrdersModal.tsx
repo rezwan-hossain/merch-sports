@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { gatewayLabel } from "@/lib/payment/gateway-label";
 import {
   getEventOrdersPaged,
   getEventOrdersForExport,
@@ -239,6 +240,7 @@ export function EventOrdersModal({ event, onClose, initialView }: Props) {
       "Payment Amount",
       "Payment Status",
       "Payment Method",
+      "Payment Gateway",
       "Transaction ID",
       "Emergency Contact",
       "Emergency Phone",
@@ -271,6 +273,7 @@ export function EventOrdersModal({ event, onClose, initialView }: Props) {
       order.payment?.amount ?? "",
       order.payment?.status || "N/A",
       order.payment?.paymentMethod || "",
+      gatewayLabel(order.payment?.paymentGateway, order.source) || "",
       order.payment?.transactionId || "",
       order.registration?.emergencyContactName || "",
       order.registration?.emergencyContactNumber || "",

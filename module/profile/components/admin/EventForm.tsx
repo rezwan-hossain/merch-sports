@@ -327,6 +327,33 @@ export function EventForm({
           />
         </div>
 
+        {/* Registration — first, because it decides whether people can register */}
+        <div className="rounded-xl border border-gray-200 bg-gray-50/70 p-4">
+          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+            Registration
+          </label>
+          <Select
+            value={form.registrationStatus}
+            onValueChange={(val) => updateField("registrationStatus", val)}
+          >
+            <SelectTrigger className="h-11 rounded-lg border border-gray-200 bg-white sm:max-w-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-white border border-gray-200">
+              {REGISTRATION_STATUSES.map((v) => (
+                <SelectItem key={v} value={v}>
+                  {REGISTRATION_STATUS_OPTIONS[v].label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-1.5 text-[11px] text-gray-500">
+            {isRegistrationStatus(form.registrationStatus)
+              ? REGISTRATION_STATUS_OPTIONS[form.registrationStatus].help
+              : ""}
+          </p>
+        </div>
+
         {/* Organizer */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
@@ -502,7 +529,7 @@ export function EventForm({
           </div>
         </div>
 
-        {/* Min Package Price & Status */}
+        {/* Min Package Price & Event Status */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
@@ -534,31 +561,6 @@ export function EventForm({
                 <SelectItem value="COMPLETED">Completed</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              Registration
-            </label>
-            <Select
-              value={form.registrationStatus}
-              onValueChange={(val) => updateField("registrationStatus", val)}
-            >
-              <SelectTrigger className="h-11 rounded-lg border border-gray-200 bg-gray-50">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-white border border-gray-200">
-                {REGISTRATION_STATUSES.map((v) => (
-                  <SelectItem key={v} value={v}>
-                    {REGISTRATION_STATUS_OPTIONS[v].label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="mt-1.5 text-[11px] text-gray-500">
-              {isRegistrationStatus(form.registrationStatus)
-                ? REGISTRATION_STATUS_OPTIONS[form.registrationStatus].help
-                : ""}
-            </p>
           </div>
         </div>
 

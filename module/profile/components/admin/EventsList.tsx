@@ -16,13 +16,28 @@ import {
   Loader2,
   Activity,
   AlertTriangle,
+  CircleStop,
+  CirclePlay,
 } from "lucide-react";
 import Link from "next/link";
 import {
   toggleEventActive,
   deleteEvent,
   getAdminEvents,
+  setEventRegistrationStatus,
 } from "@/app/actions/admin";
+import {
+  REGISTRATION_STATUS_OPTIONS,
+  isRegistrationStatus,
+} from "@/lib/registration-status";
+
+// Registration pill under the event name.
+const REG_PILL: Record<string, string> = {
+  OPEN: "bg-green-50 text-green-700 border-green-200",
+  COMING_SOON: "bg-blue-50 text-blue-700 border-blue-200",
+  SOLD_OUT: "bg-amber-50 text-amber-700 border-amber-200",
+  CLOSED: "bg-gray-100 text-gray-600 border-gray-200",
+};
 
 type EventsListProps = {
   events: AdminEvent[];
@@ -49,6 +64,22 @@ export function EventsList({
   const handleToggle = async (eventId: string, currentActive: boolean) => {
     setLoadingId(eventId);
     await toggleEventActive(eventId, !currentActive);
+    const { events: updated } = await getAdminEvents();
+    onRefresh(updated);
+    setLoadingId(null);
+  };
+
+  // One-click "End registration" / "Reopen registration" (with a confirm).
+  const handleRegistration = async (event: AdminEvent) => {
+    const closing = event.registrationStatus !== "CLOSED";
+    const question = closing
+      ? `End registration for "${event.name}"?\n\nThe event page will show "Registration closed" and no new orders can be placed. Runners who already paid are not affected. You can reopen it any time.`
+      : `Reopen registration for "${event.name}"?\n\nPeople will be able to register and pay again.`;
+    if (!confirm(question)) return;
+
+    setLoadingId(event.id);
+    const result = await setEventRegistrationStatus(event.id, closing ? "CLOSED" : "OPEN");
+    if (!result.success) alert(result.error || "Couldn't update registration");
     const { events: updated } = await getAdminEvents();
     onRefresh(updated);
     setLoadingId(null);
@@ -118,6 +149,18 @@ export function EventsList({
                   <p className="text-xs text-gray-400 mt-0.5">
                     {event.organizer.name} · {event.slug}
                   </p>
+                  {event.registrationStatus && (
+                    <span
+                      className={`mt-1.5 inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full border ${
+                        REG_PILL[event.registrationStatus] ?? REG_PILL.CLOSED
+                      }`}
+                    >
+                      Registration:{" "}
+                      {isRegistrationStatus(event.registrationStatus)
+                        ? REGISTRATION_STATUS_OPTIONS[event.registrationStatus].label
+                        : event.registrationStatus}
+                    </span>
+                  )}
                 </div>
 
                 {/* Actions */}
@@ -169,6 +212,27 @@ export function EventsList({
                       >
                         <Activity size={15} />
                       </button>
+
+                      {/* End / reopen registration (one click + confirm) */}
+                      {event.registrationStatus === "CLOSED" ? (
+                        <button
+                          onClick={() => handleRegistration(event)}
+                          className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors cursor-pointer"
+                          title="Reopen registration"
+                          aria-label="Reopen registration"
+                        >
+                          <CirclePlay size={15} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleRegistration(event)}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="End registration"
+                          aria-label="End registration"
+                        >
+                          <CircleStop size={15} />
+                        </button>
+                      )}
 
                       <button
                         onClick={() => onEdit(event)}

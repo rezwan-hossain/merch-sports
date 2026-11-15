@@ -295,6 +295,47 @@ export async function toggleEventActive(eventId: string, isActive: boolean) {
 }
 
 // ─── Delete Event ───────────────────────────────────
+// ─── Quick "End registration" / "Reopen registration" (Manage Events) ──
+// Sets Event.registrationStatus without opening the edit form. CLOSED stops
+// new registrations everywhere (event page + checkout guard); OPEN reopens.
+export async function setEventRegistrationStatus(eventId: string, status: string) {
+  const { error } = await requireAdmin();
+  if (error) return { success: false, error };
+  if (status !== "CLOSED" && status !== "OPEN") {
+    return { success: false, error: "Invalid registration status" };
+  }
+
+  try {
+    const before = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: { registrationStatus: true },
+    });
+    if (!before) return { success: false, error: "Event not found" };
+
+    const ev = await prisma.event.update({
+      where: { id: eventId },
+      data: { registrationStatus: status },
+    });
+
+    // The event page and lists are cached — show the change right away.
+    updateTag("events");
+    updateTag(`event-${ev.slug}`);
+
+    await audit({
+      action: status === "CLOSED" ? "event.registration_ended" : "event.registration_reopened",
+      entityType: "event",
+      entityId: eventId,
+      eventId,
+      summary: `${status === "CLOSED" ? "Ended" : "Reopened"} registration for "${ev.name}"`,
+      changes: { registrationStatus: [before.registrationStatus, status] },
+    });
+
+    return { success: true, error: "" };
+  } catch {
+    return { success: false, error: "Failed to update registration" };
+  }
+}
+
 export async function deleteEvent(eventId: string) {
   const { error } = await requireAdmin();
   if (error) return { success: false, error };

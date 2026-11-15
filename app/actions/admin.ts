@@ -4,7 +4,7 @@
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag, updateTag } from "next/cache";
 import { audit, diff } from "@/lib/audit";
 import { isRegistrationStatus } from "@/lib/registration-status";
 
@@ -273,6 +273,12 @@ export async function toggleEventActive(eventId: string, isActive: boolean) {
       data: { isActive },
     });
 
+    // Public lists and the event page are cached for hours/days — expire them
+    // now so a deactivated event disappears (and a reactivated one comes back)
+    // on the very next page load.
+    updateTag("events");
+    updateTag(`event-${ev.slug}`);
+
     await audit({
       action: isActive ? "event.activated" : "event.deactivated",
       entityType: "event",
@@ -298,6 +304,10 @@ export async function deleteEvent(eventId: string) {
       where: { id: eventId },
       data: { isArchived: true, isActive: false },
     });
+
+    // Remove it from the public lists and its page right away (see toggleEventActive).
+    updateTag("events");
+    updateTag(`event-${ev.slug}`);
 
     await audit({
       action: "event.deleted",

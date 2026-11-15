@@ -73,6 +73,12 @@ export async function getCheckoutData(packageId: number) {
       return { package: null, error: "Package not found" };
     }
 
+    // Deactivated / deleted event or package → no checkout (page redirects to /events).
+    if (!pkg.isActive || !pkg.event.isActive || pkg.event.isArchived) {
+      log.warn({ eventId: pkg.eventId }, "checkout:event_or_package_not_available");
+      return { package: null, error: "This event is not available" };
+    }
+
     log.info(
       {
         db: {
@@ -402,7 +408,9 @@ export async function placeOrder(formData: {
 
     const pkg = await prisma.package.findUnique({
       where: { id: formData.packageId },
-      include: { event: { select: { eventType: true, registrationStatus: true } } },
+      include: {
+        event: { select: { eventType: true, registrationStatus: true, isActive: true, isArchived: true } },
+      },
     });
     const pkgDuration = Date.now() - pkgStart;
 
@@ -431,9 +439,14 @@ export async function placeOrder(formData: {
       "db:success",
     );
 
-    if (pkg.eventId !== formData.eventId || !pkg.isActive) {
+    if (pkg.eventId !== formData.eventId || !pkg.isActive || !pkg.event.isActive || pkg.event.isArchived) {
       logWithUser.warn(
-        { pkgEventId: pkg.eventId, pkgActive: pkg.isActive },
+        {
+          pkgEventId: pkg.eventId,
+          pkgActive: pkg.isActive,
+          eventActive: pkg.event.isActive,
+          eventArchived: pkg.event.isArchived,
+        },
         "order:package_not_available",
       );
       return { error: "This package is not available" };

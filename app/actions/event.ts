@@ -39,8 +39,9 @@ export async function getEventBySlug(slug: string) {
   cacheTag("events", `event-${slug}`); // ✅ Specific tag for this event
 
   try {
-    const event = await prisma.event.findUnique({
-      where: { slug },
+    // Deactivated / deleted events aren't public: the page shows "not found".
+    const event = await prisma.event.findFirst({
+      where: { slug, isActive: true, isArchived: false },
       include: {
         organizer: true,
         packages: {
@@ -97,8 +98,9 @@ export async function getPreviousEvents(limit: number = 3) {
   try {
     const events = await prisma.event.findMany({
       where: {
-        // isActive: false,
-        // isArchived: false,
+        // Deactivated / deleted events stay hidden here too.
+        isActive: true,
+        isArchived: false,
         status: "COMPLETED",
         // ✅ Only fetch events where the date is in the past
         date: { lt: new Date() },

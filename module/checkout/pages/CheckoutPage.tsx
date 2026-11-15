@@ -5,7 +5,7 @@ import { useState, useRef, useMemo, useEffect } from "react";
 import { BillingForm, BillingFormRef } from "../components/BillingForm";
 import { OrderSummary } from "../components/OrderSummary";
 import { CheckoutAlert } from "../components/CheckoutAlert";
-import { paymentMethodName } from "../components/PaymentMethodSelector";
+import { defaultPaymentMethod, paymentMethodName } from "../components/PaymentMethodSelector";
 import { HeroText } from "@/components/ui/HeroText";
 import { BillingFormData, CheckoutItem, AppliedCoupon } from "@/types/checkout";
 import { useRouter } from "next/navigation";
@@ -36,7 +36,8 @@ const CheckoutPage = ({
   const router = useRouter();
   const billingFormRef = useRef<BillingFormRef>(null);
 
-  const [paymentMethod, setPaymentMethod] = useState("shurjopay");
+  // SSLCommerz by default (ShurjoPay only if SSLCommerz is switched off).
+  const [paymentMethod, setPaymentMethod] = useState(() => defaultPaymentMethod(sslcommerzEnabled));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 

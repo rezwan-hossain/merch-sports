@@ -14,14 +14,15 @@ type PaymentMethod = {
   supports: string[];
 };
 
+const SHURJOPAY: PaymentMethod = {
+  id: "shurjopay",
+  name: "ShurjoPay",
+  logo: "/icons/shurjopay.png",
+  tagline: "Mobile banking & cards",
+  supports: ["bKash", "Nagad", "Rocket", "Visa", "Mastercard"],
+};
+
 const PAYMENT_METHODS: PaymentMethod[] = [
-  {
-    id: "shurjopay",
-    name: "ShurjoPay",
-    logo: "/icons/shurjopay.png",
-    tagline: "Mobile banking & cards",
-    supports: ["bKash", "Nagad", "Rocket", "Visa", "Mastercard"],
-  },
   {
     id: "sslcommerz",
     name: "SSLCommerz",
@@ -39,9 +40,32 @@ const PAYMENT_METHODS: PaymentMethod[] = [
   },
 ];
 
+// Offered at checkout. ShurjoPay is commented out — new checkouts use
+// SSLCommerz. (Older ShurjoPay orders can still retry on ShurjoPay, and its
+// callback keeps working.) To offer ShurjoPay again, uncomment it here.
+const CHECKOUT_METHODS: PaymentMethod[] = [
+  // SHURJOPAY,
+  ...PAYMENT_METHODS,
+];
+
+/**
+ * The methods shown at checkout. SSLCommerz only when the server has it
+ * switched on — and if that leaves nothing, ShurjoPay is shown instead, so the
+ * checkout never ends up with no way to pay.
+ */
+export function checkoutMethods(sslcommerzEnabled: boolean): PaymentMethod[] {
+  const shown = CHECKOUT_METHODS.filter((m) => m.id !== "sslcommerz" || sslcommerzEnabled);
+  return shown.length > 0 ? shown : [SHURJOPAY];
+}
+
+/** The method selected when the checkout opens. */
+export function defaultPaymentMethod(sslcommerzEnabled: boolean): string {
+  return checkoutMethods(sslcommerzEnabled)[0].id;
+}
+
 /** "ShurjoPay" / "SSLCommerz" — for the pay button text. */
 export function paymentMethodName(id: string): string | null {
-  return PAYMENT_METHODS.find((m) => m.id === id)?.name ?? null;
+  return [SHURJOPAY, ...PAYMENT_METHODS].find((m) => m.id === id)?.name ?? null;
 }
 
 type Props = {
@@ -56,9 +80,7 @@ export function PaymentMethodSelector({
   onChange,
   sslcommerzEnabled,
 }: Props) {
-  const methods = PAYMENT_METHODS.filter(
-    (m) => m.id !== "sslcommerz" || sslcommerzEnabled,
-  );
+  const methods = checkoutMethods(sslcommerzEnabled);
 
   return (
     <fieldset className="mb-6 min-w-0 sm:mb-8 mt-4">

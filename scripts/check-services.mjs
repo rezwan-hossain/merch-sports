@@ -37,6 +37,29 @@ const section = (title) =>
   console.log(`\n── ${title} ${"─".repeat(Math.max(0, 50 - title.length))}`);
 const shape = (v) => v.replace(/[A-Za-z0-9]/g, "x");
 
+// Node's fetch only says "fetch failed"; the real reason is in err.cause
+// (ENOTFOUND = DNS, ETIMEDOUT / UND_ERR_CONNECT_TIMEOUT = blocked or down,
+// ECONNREFUSED, certificate errors…). Show it, plus a hint.
+function netError(err) {
+  const cause = err?.cause;
+  const code = cause?.code || cause?.name || "";
+  const detail = cause?.message && cause.message !== err.message ? cause.message : "";
+  const hints = {
+    ENOTFOUND: "DNS can't find the host — check the server's DNS (/etc/resolv.conf).",
+    EAI_AGAIN: "DNS lookup timed out — check the server's DNS.",
+    ETIMEDOUT: "Connection timed out — a firewall may block outgoing HTTPS (port 443), or the provider blocks this server's IP.",
+    UND_ERR_CONNECT_TIMEOUT: "Connection timed out — a firewall may block outgoing HTTPS (port 443), or the provider blocks this server's IP.",
+    ECONNREFUSED: "Connection refused — the provider rejected this server (ask them to whitelist its IP).",
+    ECONNRESET: "Connection reset — often the provider's firewall dropping this server's IP.",
+    ENETUNREACH: "Network unreachable — often an IPv6 route problem; see the curl -4 / -6 test.",
+    EHOSTUNREACH: "Host unreachable — routing/firewall problem on this server.",
+    CERT_HAS_EXPIRED: "TLS certificate problem — check the server's date/time and CA certificates.",
+    UNABLE_TO_GET_ISSUER_CERT_LOCALLY: "Missing CA certificates — install/update ca-certificates on the server.",
+  };
+  const text = [err?.message, code && `(${code})`, detail].filter(Boolean).join(" ");
+  return { text, hint: hints[code] || "Network/DNS/firewall problem on this server." };
+}
+
 async function fetchJson(url, init = {}) {
   const res = await fetch(url, {
     ...init,
@@ -164,10 +187,8 @@ if (env.SHURJOPAY_API_URL && env.SHURJOPAY_USERNAME && env.SHURJOPAY_PASSWORD) {
       );
     }
   } catch (err) {
-    bad(
-      `Can't reach ShurjoPay: ${err.message}`,
-      "Network/DNS/firewall problem on this server.",
-    );
+    const n = netError(err);
+    bad(`Can't reach ShurjoPay: ${n.text}`, n.hint);
   }
 }
 
@@ -245,7 +266,8 @@ if (env.SSLCOMMERZ_STORE_ID || env.SSLCOMMERZ_ENABLED === "true") {
             : "Check SSLCOMMERZ_STORE_ID / SSLCOMMERZ_STORE_PASSWORD (quoted?) and that the url matches the store (sandbox vs live).",
         );
     } catch (err) {
-      bad(`Can't reach SSLCommerz: ${err.message}`, "Network/DNS/firewall problem on this server.");
+      const n = netError(err);
+      bad(`Can't reach SSLCommerz: ${n.text}`, n.hint);
     }
   }
   try {
@@ -302,7 +324,7 @@ if (env.SMS_API_KEY) {
       );
     }
   } catch (err) {
-    bad(`Can't reach the SMS gateway: ${err.message}`);
+    bad(`Can't reach the SMS gateway: ${netError(err).text}`, netError(err).hint);
   }
 
   // Did the last REAL confirmation SMS go out? The wallet can show money while
@@ -382,7 +404,7 @@ if (env.SMS_API_KEY) {
                 : "See the code list at the top of lib/sms.ts.",
         );
     } catch (err) {
-      bad(`Can't reach SMS gateway: ${err.message}`);
+      bad(`Can't reach SMS gateway: ${netError(err).text}`, netError(err).hint);
     }
   }
 }
@@ -405,7 +427,7 @@ if (env.RESEND_API_KEY) {
         "Check RESEND_API_KEY.",
       );
   } catch (err) {
-    bad(`Can't reach Resend: ${err.message}`);
+    bad(`Can't reach Resend: ${netError(err).text}`, netError(err).hint);
   }
 }
 

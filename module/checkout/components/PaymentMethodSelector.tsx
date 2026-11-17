@@ -43,10 +43,7 @@ const PAYMENT_METHODS: PaymentMethod[] = [
 // Offered at checkout. ShurjoPay is commented out — new checkouts use
 // SSLCommerz. (Older ShurjoPay orders can still retry on ShurjoPay, and its
 // callback keeps working.) To offer ShurjoPay again, uncomment it here.
-const CHECKOUT_METHODS: PaymentMethod[] = [
-  // SHURJOPAY,
-  ...PAYMENT_METHODS,
-];
+const CHECKOUT_METHODS: PaymentMethod[] = [SHURJOPAY, ...PAYMENT_METHODS];
 
 /**
  * The methods shown at checkout. SSLCommerz only when the server has it
@@ -54,7 +51,9 @@ const CHECKOUT_METHODS: PaymentMethod[] = [
  * checkout never ends up with no way to pay.
  */
 export function checkoutMethods(sslcommerzEnabled: boolean): PaymentMethod[] {
-  const shown = CHECKOUT_METHODS.filter((m) => m.id !== "sslcommerz" || sslcommerzEnabled);
+  const shown = CHECKOUT_METHODS.filter(
+    (m) => m.id !== "sslcommerz" || sslcommerzEnabled,
+  );
   return shown.length > 0 ? shown : [SHURJOPAY];
 }
 

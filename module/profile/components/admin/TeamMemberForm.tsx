@@ -31,6 +31,7 @@ import {
   Instagram,
   Facebook,
 } from "lucide-react";
+import { ImageVpsUpload } from "./ImageVpsUpload";
 
 type Props = {
   member: TeamMember | null;
@@ -251,10 +252,18 @@ export function TeamMemberForm({ member, onSuccess, onCancel }: Props) {
               (optional)
             </span>
           </label>
-          <ImageUpload
+          {/* <ImageUpload
             value={form.image}
             onChange={(url) => updateField("image", url)}
             bucket="team-images"
+            folder="profiles"
+            label="Upload Profile Image"
+            aspectRatio="aspect-square"
+            maxSizeMB={2}
+          /> */}
+          <ImageVpsUpload
+            value={form.image}
+            onChange={(url) => updateField("image", url)}
             folder="profiles"
             label="Upload Profile Image"
             aspectRatio="aspect-square"

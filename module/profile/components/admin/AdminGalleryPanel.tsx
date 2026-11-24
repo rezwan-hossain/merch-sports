@@ -21,6 +21,7 @@ import {
   deleteGalleryImage,
   updateGalleryImage,
 } from "@/app/actions/gallery";
+import { ImageVpsUpload } from "./ImageVpsUpload";
 
 type Props = {
   initialImages: GalleryImage[];
@@ -206,10 +207,18 @@ export function AdminGalleryPanel({ initialImages }: Props) {
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Image *
             </label>
-            <ImageUpload
+            {/* <ImageUpload
               value={formData.src}
               onChange={(url) => setFormData((prev) => ({ ...prev, src: url }))}
               bucket="gallery-images"
+              folder="gallery"
+              label="Upload Gallery Image"
+              aspectRatio="aspect-[4/3]"
+              maxSizeMB={10}
+            /> */}
+            <ImageVpsUpload
+              value={formData.src}
+              onChange={(url) => setFormData((prev) => ({ ...prev, src: url }))}
               folder="gallery"
               label="Upload Gallery Image"
               aspectRatio="aspect-[4/3]"

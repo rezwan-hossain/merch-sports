@@ -8,6 +8,7 @@ import { ToggleSwitch } from "./ToggleSwitch";
 import Input from "@/components/ui/input";
 import { Check, Loader2, Save, Monitor, Smartphone } from "lucide-react";
 import { HeroFormData, HeroSectionData } from "@/types/homepage";
+import { ImageVpsUpload } from "./ImageVpsUpload";
 
 type Props = {
   hero: HeroSectionData | null;
@@ -114,10 +115,18 @@ export function HeroForm({ hero, onSuccess, onCancel }: Props) {
                   Desktop <span className="text-red-500">*</span>
                 </label>
               </div>
-              <ImageUpload
+              {/* <ImageUpload
                 value={form.desktopImage}
                 onChange={(url) => updateField("desktopImage", url)}
                 bucket="event-images"
+                folder="hero"
+                label="Desktop Image"
+                aspectRatio="aspect-[16/9]"
+                maxSizeMB={5}
+              /> */}
+              <ImageVpsUpload
+                value={form.desktopImage}
+                onChange={(url) => updateField("desktopImage", url)}
                 folder="hero"
                 label="Desktop Image"
                 aspectRatio="aspect-[16/9]"
@@ -136,10 +145,18 @@ export function HeroForm({ hero, onSuccess, onCancel }: Props) {
                   </span>
                 </label>
               </div>
-              <ImageUpload
+              {/* <ImageUpload
                 value={form.mobileImage}
                 onChange={(url) => updateField("mobileImage", url)}
                 bucket="event-images"
+                folder="hero"
+                label="Mobile"
+                aspectRatio="aspect-[9/16]"
+                maxSizeMB={3}
+              /> */}
+              <ImageVpsUpload
+                value={form.mobileImage}
+                onChange={(url) => updateField("mobileImage", url)}
                 folder="hero"
                 label="Mobile"
                 aspectRatio="aspect-[9/16]"
@@ -212,13 +229,17 @@ export function HeroForm({ hero, onSuccess, onCancel }: Props) {
                 <input
                   type="color"
                   value={form.countdownColor}
-                  onChange={(e) => updateField("countdownColor", e.target.value)}
+                  onChange={(e) =>
+                    updateField("countdownColor", e.target.value)
+                  }
                   className="h-9 w-12 cursor-pointer rounded border border-gray-200 bg-white p-0.5"
                   aria-label="Countdown color"
                 />
                 <Input
                   value={form.countdownColor}
-                  onChange={(e) => updateField("countdownColor", e.target.value)}
+                  onChange={(e) =>
+                    updateField("countdownColor", e.target.value)
+                  }
                   maxLength={7}
                   className="h-9 w-24 border border-gray-200 bg-gray-50 rounded-lg font-mono text-xs uppercase"
                 />

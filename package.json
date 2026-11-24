@@ -9,6 +9,7 @@
     "lint": "eslint",
     "check:services": "node scripts/check-services.mjs",
     "check:uploads": "node scripts/check-uploads.mjs",
+    "migrate:images": "node scripts/migrate-supabase-images.mjs",
     "postinstall": "prisma generate"
   },
   "prisma": {

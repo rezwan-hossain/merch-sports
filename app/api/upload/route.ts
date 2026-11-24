@@ -4,6 +4,7 @@ import sharp from "sharp";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 // REQUIRED. Without this, Next may compile the route for the Edge runtime,
 // where node:fs and sharp's native binary simply do not exist.
@@ -44,17 +45,12 @@ function safeFolder(raw: FormDataEntryValue | null): string {
 export async function POST(req: Request) {
   try {
     // ── 1. Authentication ────────────────────────────────────────────────
-    // REPLACE THIS with your real auth check. An unauthenticated upload
-    // endpoint is an open invitation to fill your disk.
-    //
-    //   NextAuth v5:   const session = await auth();
-    //   Clerk:         const { userId } = await auth();
-    //   Custom JWT:    verify the cookie yourself
-    //
-    // const session = await auth();
-    // if (!session?.user) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
+    // Admins only. Checked before reading the body, so strangers can't fill
+    // the disk (or even make the server parse a big upload).
+    const { error: authError } = await requireAdmin();
+    if (authError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     // ── 2. Read the multipart body ───────────────────────────────────────
     const form = await req.formData();
@@ -159,11 +155,11 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    // Same auth check as POST — otherwise anyone can wipe your images.
-    // const session = await auth();
-    // if (!session?.user) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
+    // Same admin check as POST — otherwise anyone could wipe the images.
+    const { error: authError } = await requireAdmin();
+    if (authError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const { path: relPath } = await req.json();
 

@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   images: {
+    // Keep optimized images 30 days. Uploads get a new file name, so a long
+    // cache never shows a stale picture — and it stops the optimizer from
+    // re-downloading originals (that's what burned Supabase egress).
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       {
         protocol: "https",

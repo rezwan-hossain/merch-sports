@@ -14,7 +14,8 @@ interface OrderSummaryProps {
   onPaymentMethodChange: (method: string) => void;
   onPlaceOrder: () => void;
   loading: boolean;
-  isFormValid: boolean; // Added prop
+  /** Names of fields still missing/invalid ("Blood group"…); empty = form OK. */
+  missingFields: string[];
 
   // Coupon props
   appliedCoupon: AppliedCoupon | null;
@@ -30,7 +31,7 @@ export const OrderSummary = ({
   onPaymentMethodChange,
   onPlaceOrder,
   loading,
-  isFormValid,
+  missingFields,
   appliedCoupon,
   onApplyCoupon,
   onRemoveCoupon,
@@ -46,7 +47,17 @@ export const OrderSummary = ({
   // must tick it to pay. SSLCommerz requires a blank box linking all three.
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
 
-  const isButtonDisabled = loading || !isFormValid || !agreedToPrivacy;
+  // Missing fields do NOT disable the button: clicking it runs the form check,
+  // which scrolls to the first missing field and marks it red. (A greyed-out
+  // button gave no clue what was wrong — runners guessed "the coupon".)
+  // No order is created until the form is valid (CheckoutPage.handlePlaceOrder).
+  const isButtonDisabled = loading || !agreedToPrivacy;
+
+  // "Missing: Blood group, T-shirt size and 2 more"
+  const missingText =
+    missingFields.length <= 3
+      ? missingFields.join(", ")
+      : `${missingFields.slice(0, 3).join(", ")} and ${missingFields.length - 3} more`;
 
   return (
     <div className="rounded-lg border border-gray-200 p-4 sm:p-6 md:p-8 bg-white">
@@ -168,10 +179,10 @@ export const OrderSummary = ({
         </p>
       )}
 
-      {/* Validation hint when form is invalid */}
-      {!isFormValid && (
+      {/* Name the fields still to fill in */}
+      {missingFields.length > 0 && (
         <p className="mb-3 text-xs text-amber-600 text-center">
-          Please fill in all required fields to continue
+          Missing: {missingText}
         </p>
       )}
 

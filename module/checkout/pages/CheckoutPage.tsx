@@ -82,61 +82,33 @@ const CheckoutPage = ({
     runnerCategory: "",
   });
 
-  // Check if form is valid for enabling/disabling submit button
-  const isFormValid = useMemo(() => {
-    // Check required fields
-    const requiredFields: (keyof BillingFormData)[] = [
-      "fullName",
-      "email",
-      "phone",
-      "gender",
-      "birthDate",
-      "ageCategory",
-      "bloodGroup",
-      // "tshirtSize",
-      "runnerCategory",
-      ...(eventType !== "VIRTUAL"
-        ? ["tshirtSize" as keyof BillingFormData]
-        : []),
-    ];
+  // Fields that are missing or wrong, by name ("Blood group", "Phone number"…),
+  // in the order they appear on the form. Shown under the Pay button so the
+  // runner knows exactly what to fix — the button itself stays clickable and
+  // scrolls to the first one (BillingForm.validateAndFocus).
+  const missingFields = useMemo(() => {
+    const missing: string[] = [];
+    const filled = (v: string | undefined) => !!v?.trim();
+    const cleanPhone = (v: string) => v.replace(/[\s-]/g, "");
 
-    // Check if all required fields have values
-    for (const field of requiredFields) {
-      if (!formData[field]?.trim()) {
-        return false;
-      }
-    }
+    if (formData.fullName.trim().length < 2) missing.push("Full name");
+    if (!EMAIL_REGEX.test(formData.email)) missing.push("Email");
+    if (!BD_PHONE_REGEX.test(cleanPhone(formData.phone))) missing.push("Phone number");
+    if (!filled(formData.gender)) missing.push("Gender");
+    if (!filled(formData.birthDate) || new Date(formData.birthDate) >= new Date())
+      missing.push("Date of birth");
+    if (!filled(formData.ageCategory)) missing.push("Age category");
+    if (!filled(formData.bloodGroup)) missing.push("Blood group");
+    if (eventType !== "VIRTUAL" && !filled(formData.tshirtSize)) missing.push("T-shirt size");
+    // Optional, but if filled in it must be a valid number.
+    if (
+      filled(formData.emergencyContactNumber) &&
+      !BD_PHONE_REGEX.test(cleanPhone(formData.emergencyContactNumber))
+    )
+      missing.push("Emergency contact number");
+    if (!filled(formData.runnerCategory)) missing.push("Runner category");
 
-    // Validate email format
-    if (!EMAIL_REGEX.test(formData.email)) {
-      return false;
-    }
-
-    // Validate phone format
-    const cleanPhone = formData.phone.replace(/[\s-]/g, "");
-    if (!BD_PHONE_REGEX.test(cleanPhone)) {
-      return false;
-    }
-
-    // Validate birth date is in the past
-    const selectedDate = new Date(formData.birthDate);
-    const today = new Date();
-    if (selectedDate >= today) {
-      return false;
-    }
-
-    // Validate emergency contact number if provided
-    if (formData.emergencyContactNumber?.trim()) {
-      const cleanEmergencyPhone = formData.emergencyContactNumber.replace(
-        /[\s-]/g,
-        "",
-      );
-      if (!BD_PHONE_REGEX.test(cleanEmergencyPhone)) {
-        return false;
-      }
-    }
-
-    return true;
+    return missing;
   }, [formData, eventType]);
 
   const updateField = (field: keyof BillingFormData, value: string) => {
@@ -303,7 +275,7 @@ const CheckoutPage = ({
               sslcommerzEnabled={sslcommerzEnabled}
               onPlaceOrder={handlePlaceOrder}
               loading={loading}
-              isFormValid={isFormValid}
+              missingFields={missingFields}
               appliedCoupon={appliedCoupon}
               onApplyCoupon={handleApplyCoupon}
               onRemoveCoupon={handleRemoveCoupon}

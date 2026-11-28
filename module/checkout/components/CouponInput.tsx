@@ -94,7 +94,9 @@ export function CouponInput({
             </span>
           </div>
           <button
+            type="button"
             onClick={handleRemove}
+            aria-label="Remove coupon"
             className="text-green-600 hover:text-green-800 p-1 shrink-0"
           >
             <X className="h-4 w-4" />
@@ -110,12 +112,16 @@ export function CouponInput({
   // ── Input state ──
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700">
-        Have a coupon code?
+      <label htmlFor="coupon-code" className="text-sm font-medium text-gray-700">
+        Have a coupon code?{" "}
+        <span className="font-normal text-gray-400">(optional)</span>
       </label>
       <div className="flex flex-col sm:flex-row gap-2">
         <input
+          id="coupon-code"
           type="text"
+          enterKeyHint="done"
+          autoComplete="off"
           value={code}
           onChange={(e) => {
             setCode(e.target.value.toUpperCase());
@@ -124,9 +130,19 @@ export function CouponInput({
           placeholder="Enter coupon code"
           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-neutral-900 focus:border-transparent uppercase text-sm sm:text-base w-full"
           disabled={loading}
-          onKeyDown={(e) => e.key === "Enter" && handleApply()}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            // Still composing a word (Bangla / phone keyboards) — not a submit.
+            if (e.nativeEvent.isComposing) return;
+            e.preventDefault();
+            // Empty box: do nothing. On phones the keyboard's Next/↵ lands
+            // here after the last form field; an error then made the coupon
+            // look required. Same rule as the disabled Apply button.
+            if (code.trim()) handleApply();
+          }}
         />
         <button
+          type="button"
           onClick={handleApply}
           disabled={loading || !code.trim()}
           className="px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 w-full sm:w-auto shrink-0"
@@ -135,6 +151,10 @@ export function CouponInput({
         </button>
       </div>
       {error && <p className="text-xs sm:text-sm text-red-600">{error}</p>}
+      {/* Typed but not applied — otherwise it's silently ignored at payment */}
+      {code.trim() && !error && !loading && (
+        <p className="text-xs text-gray-500">Tap Apply to use this code.</p>
+      )}
       {success && (
         <p className="text-xs sm:text-sm text-green-600 flex items-center gap-1">
           <Check className="h-4 w-4 shrink-0" />
